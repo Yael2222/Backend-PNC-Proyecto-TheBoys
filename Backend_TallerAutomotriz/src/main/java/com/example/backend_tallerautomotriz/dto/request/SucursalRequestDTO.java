@@ -4,7 +4,8 @@ import jakarta.validation.constraints.*;
 import lombok.*;
 
 @Data @NoArgsConstructor @AllArgsConstructor
-public class MecanicoRequestDTO {
-    @NotNull private Integer usuarioId;
-    @NotNull private Integer sucursalId;
+public class SucursalRequestDTO {
+    @NotBlank private String nombre;
+    @NotBlank private String direccion;
+    @NotBlank private String departamento;
 }
