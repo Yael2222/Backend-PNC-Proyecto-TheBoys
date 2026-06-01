@@ -1,6 +1,9 @@
 package com.example.backend_tallerautomotriz.controller;
 
 
+import com.example.backend_tallerautomotriz.dto.request.FacturaRequestDTO;
+import com.example.backend_tallerautomotriz.dto.response.FacturaResponseDTO;
+import com.example.backend_tallerautomotriz.service.FacturaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;

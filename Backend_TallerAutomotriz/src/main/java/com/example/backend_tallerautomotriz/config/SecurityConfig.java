@@ -1,5 +1,6 @@
 package com.example.backend_tallerautomotriz.config;
 
+import com.example.backend_tallerautomotriz.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.*;
 import org.springframework.security.authentication.*;

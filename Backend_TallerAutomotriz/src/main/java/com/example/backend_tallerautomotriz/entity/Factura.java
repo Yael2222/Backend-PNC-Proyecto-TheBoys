@@ -1,5 +1,7 @@
 package com.example.backend_tallerautomotriz.entity;
 
+import com.example.backend_tallerautomotriz.enums.EstadoPago;
+import com.example.backend_tallerautomotriz.enums.MetodoPago;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;

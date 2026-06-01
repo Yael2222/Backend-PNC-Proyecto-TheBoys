@@ -1,5 +1,9 @@
 package com.example.backend_tallerautomotriz.controller;
 
+import com.example.backend_tallerautomotriz.dto.request.OrdenTrabajoRequestDTO;
+import com.example.backend_tallerautomotriz.dto.response.OrdenTrabajoResponseDTO;
+import com.example.backend_tallerautomotriz.enums.EstadoOrden;
+import com.example.backend_tallerautomotriz.service.OrdenTrabajoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;

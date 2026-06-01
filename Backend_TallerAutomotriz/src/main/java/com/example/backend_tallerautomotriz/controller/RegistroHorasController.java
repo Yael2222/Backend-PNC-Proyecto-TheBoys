@@ -1,5 +1,8 @@
 package com.example.backend_tallerautomotriz.controller;
 
+import com.example.backend_tallerautomotriz.dto.request.RegistroHorasRequestDTO;
+import com.example.backend_tallerautomotriz.dto.response.RegistroHorasResponseDTO;
+import com.example.backend_tallerautomotriz.service.RegistroHorasService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;

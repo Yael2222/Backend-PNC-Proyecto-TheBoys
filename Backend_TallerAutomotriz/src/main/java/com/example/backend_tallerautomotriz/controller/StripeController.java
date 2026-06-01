@@ -1,6 +1,9 @@
 package com.example.backend_tallerautomotriz.controller;
 
 
+import com.example.backend_tallerautomotriz.dto.request.StripePaymentRequestDTO;
+import com.example.backend_tallerautomotriz.dto.response.StripePaymentResponseDTO;
+import com.example.backend_tallerautomotriz.service.StripeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;

@@ -1,5 +1,6 @@
 package com.example.backend_tallerautomotriz.entity;
 
+import com.example.backend_tallerautomotriz.enums.NombreRol;
 import jakarta.persistence.*;
 import lombok.*;
 

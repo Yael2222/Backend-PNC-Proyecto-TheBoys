@@ -1,6 +1,9 @@
 package com.example.backend_tallerautomotriz.controller;
 
 
+import com.example.backend_tallerautomotriz.dto.request.RepuestoRequestDTO;
+import com.example.backend_tallerautomotriz.dto.response.RepuestoResponseDTO;
+import com.example.backend_tallerautomotriz.service.RepuestoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;

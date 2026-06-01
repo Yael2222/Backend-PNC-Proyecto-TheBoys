@@ -1,5 +1,7 @@
 package com.example.backend_tallerautomotriz.entity;
 
+import com.example.backend_tallerautomotriz.enums.EstadoOrden;
+import com.example.backend_tallerautomotriz.enums.TipoOrden;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
