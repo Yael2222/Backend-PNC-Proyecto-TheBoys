@@ -1,6 +1,9 @@
 package com.example.backend_tallerautomotriz.controller;
 
 
+import com.example.backend_tallerautomotriz.dto.request.CitaRequestDTO;
+import com.example.backend_tallerautomotriz.dto.response.CitaResponseDTO;
+import com.example.backend_tallerautomotriz.service.CitaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
