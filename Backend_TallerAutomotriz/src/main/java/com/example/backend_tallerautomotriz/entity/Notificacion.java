@@ -9,14 +9,15 @@ import java.time.LocalDateTime;
 @Data @NoArgsConstructor @AllArgsConstructor
 public class Notificacion {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 1000)
     private String mensaje;
 
     @Column(nullable = false)
@@ -25,7 +26,7 @@ public class Notificacion {
     @Column(name = "fecha_creacion", nullable = false)
     private LocalDateTime fechaCreacion = LocalDateTime.now();
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
     private String tipo;
 
     @Column(name = "referencia_id")

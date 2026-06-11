@@ -10,6 +10,8 @@ import com.example.backend_tallerautomotriz.service.NotificacionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -17,39 +19,49 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class NotificacionServiceImpl implements NotificacionService {
 
-    private final NotificacionRepository repo;
+    private final NotificacionRepository notificacionRepo;
     private final UsuarioRepository usuarioRepo;
 
     @Override
+    @Transactional(readOnly = true)
     public List<NotificacionResponseDTO> listarPorUsuario(Integer usuarioId) {
-        return repo.findByUsuarioIdOrderByFechaCreacionDesc(usuarioId)
-                .stream().map(this::toDTO).collect(Collectors.toList());
+        validarUsuarioExiste(usuarioId);
+        return notificacionRepo.findByUsuarioIdOrderByFechaCreacionDesc(usuarioId).stream().map(this::toDTO).toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<NotificacionResponseDTO> listarNoLeidas(Integer usuarioId) {
-        return repo.findByUsuarioIdAndLeidaFalseOrderByFechaCreacionDesc(usuarioId)
-                .stream().map(this::toDTO).collect(Collectors.toList());
+        validarUsuarioExiste(usuarioId);
+        return notificacionRepo.findByUsuarioIdAndLeidaFalseOrderByFechaCreacionDesc(usuarioId)
+                .stream()
+                .map(this::toDTO)
+                .toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public long contarNoLeidas(Integer usuarioId) {
-        return repo.countByUsuarioIdAndLeidaFalse(usuarioId);
+        validarUsuarioExiste(usuarioId);
+        return notificacionRepo.countByUsuarioIdAndLeidaFalse(usuarioId);
     }
 
     @Override
     @Transactional
     public void marcarComoLeida(Integer notificacionId) {
-        Notificacion n = repo.findById(notificacionId)
-                .orElseThrow(() -> new EntityNotFoundException("Notificación no encontrada: " + notificacionId));
-        n.setLeida(true);
-        repo.save(n);
+        Notificacion notificacion = notificacionRepo.findById(notificacionId)
+                .orElseThrow(() -> new EntityNotFoundException("Notificacion no encontrada: " + notificacionId));
+        if (!notificacion.isLeida()) {
+            notificacion.setLeida(true);
+            notificacionRepo.save(notificacion);
+        }
     }
 
     @Override
     @Transactional
     public void marcarTodasComoLeidas(Integer usuarioId) {
-        repo.marcarTodasComoLeidas(usuarioId);
+        validarUsuarioExiste(usuarioId);
+        notificacionRepo.marcarTodasComoLeidas(usuarioId);
     }
 
     @Override
@@ -57,13 +69,30 @@ public class NotificacionServiceImpl implements NotificacionService {
     public void crear(Integer usuarioId, String mensaje, String tipo, Integer referenciaId) {
         Usuario usuario = usuarioRepo.findById(usuarioId)
                 .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado: " + usuarioId));
-        Notificacion n = new Notificacion(null, usuario, mensaje, false, null, tipo, referenciaId);
-        repo.save(n);
+        Notificacion notificacion = new Notificacion(
+                null,
+                usuario,
+                mensaje,
+                false,
+                LocalDateTime.now(),
+                tipo,
+                referenciaId);
+        notificacionRepo.save(notificacion);
     }
 
-    private NotificacionResponseDTO toDTO(Notificacion n) {
+    private void validarUsuarioExiste(Integer usuarioId) {
+        if (!usuarioRepo.existsById(usuarioId)) {
+            throw new EntityNotFoundException("Usuario no encontrado: " + usuarioId);
+        }
+    }
+
+    private NotificacionResponseDTO toDTO(Notificacion notificacion) {
         return new NotificacionResponseDTO(
-                n.getId(), n.getMensaje(), n.isLeida(),
-                n.getFechaCreacion(), n.getTipo(), n.getReferenciaId());
+                notificacion.getId(),
+                notificacion.getMensaje(),
+                notificacion.isLeida(),
+                notificacion.getFechaCreacion(),
+                notificacion.getTipo(),
+                notificacion.getReferenciaId());
     }
 }

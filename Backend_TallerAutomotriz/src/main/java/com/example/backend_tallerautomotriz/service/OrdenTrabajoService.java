@@ -8,21 +8,17 @@ import java.util.List;
 
 public interface OrdenTrabajoService {
 
-    OrdenTrabajoResponseDTO crear(OrdenTrabajoRequestDTO req);
-
+    OrdenTrabajoResponseDTO crear(OrdenTrabajoRequestDTO request);
     OrdenTrabajoResponseDTO obtenerPorId(Integer id);
-
     List<OrdenTrabajoResponseDTO> listarTodos();
-
     List<OrdenTrabajoResponseDTO> listarPorCliente(Integer clienteId);
-
     List<OrdenTrabajoResponseDTO> listarPorMecanico(Integer mecanicoId);
 
     List<OrdenTrabajoResponseDTO> listarPorVehiculo(String patente);
 
     OrdenTrabajoResponseDTO cambiarEstado(Integer id, EstadoOrden estado);
 
-    OrdenTrabajoResponseDTO enviarPresupuesto(Integer ordenId, PresupuestoRequestDTO req);
+    OrdenTrabajoResponseDTO enviarPresupuesto(Integer ordenId, PresupuestoRequestDTO request);
 
     OrdenTrabajoResponseDTO aprobarPresupuesto(Integer ordenId);
 
