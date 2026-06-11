@@ -6,23 +6,27 @@ import com.example.backend_tallerautomotriz.dto.response.OrdenTrabajoResponseDTO
 import com.example.backend_tallerautomotriz.enums.EstadoOrden;
 import com.example.backend_tallerautomotriz.service.OrdenTrabajoService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/ordenes")
 @RequiredArgsConstructor
+@Validated
 public class OrdenTrabajoController {
 
     private final OrdenTrabajoService ordenService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN','MECANICO','CLIENTE')")
-    public ResponseEntity<OrdenTrabajoResponseDTO> crear(@Valid @RequestBody OrdenTrabajoRequestDTO req) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(ordenService.crear(req));
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('MECANICO') and @tallerAuthorization.esMecanicoPropietario(authentication, #request.mecanicoId))")
+    public ResponseEntity<OrdenTrabajoResponseDTO> crear(@Valid @RequestBody OrdenTrabajoRequestDTO request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(ordenService.crear(request));
     }
 
     @GetMapping
@@ -32,68 +36,68 @@ public class OrdenTrabajoController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','MECANICO','CLIENTE')")
-    public ResponseEntity<OrdenTrabajoResponseDTO> obtener(@PathVariable Integer id) {
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and @tallerAuthorization.esOrdenDelCliente(authentication, #id)) or (hasRole('MECANICO') and @tallerAuthorization.esOrdenAsignadaAlMecanico(authentication, #id))")
+    public ResponseEntity<OrdenTrabajoResponseDTO> obtener(@PathVariable @Positive Integer id) {
         return ResponseEntity.ok(ordenService.obtenerPorId(id));
     }
 
     @GetMapping("/cliente/{clienteId}")
-    @PreAuthorize("hasAnyRole('ADMIN','MECANICO','CLIENTE')")
-    public ResponseEntity<List<OrdenTrabajoResponseDTO>> listarPorCliente(@PathVariable Integer clienteId) {
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and @tallerAuthorization.esClientePropietario(authentication, #clienteId))")
+    public ResponseEntity<List<OrdenTrabajoResponseDTO>> listarPorCliente(@PathVariable @Positive Integer clienteId) {
         return ResponseEntity.ok(ordenService.listarPorCliente(clienteId));
     }
 
     @GetMapping("/mecanico/{mecanicoId}")
-    @PreAuthorize("hasAnyRole('ADMIN','MECANICO')")
-    public ResponseEntity<List<OrdenTrabajoResponseDTO>> listarPorMecanico(@PathVariable Integer mecanicoId) {
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('MECANICO') and @tallerAuthorization.esMecanicoPropietario(authentication, #mecanicoId))")
+    public ResponseEntity<List<OrdenTrabajoResponseDTO>> listarPorMecanico(@PathVariable @Positive Integer mecanicoId) {
         return ResponseEntity.ok(ordenService.listarPorMecanico(mecanicoId));
     }
 
     @GetMapping("/vehiculo/{patente}")
-    @PreAuthorize("hasAnyRole('ADMIN','MECANICO','CLIENTE')")
-    public ResponseEntity<List<OrdenTrabajoResponseDTO>> listarPorVehiculo(@PathVariable String patente) {
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and @tallerAuthorization.esVehiculoDelCliente(authentication, #patente)) or (hasRole('MECANICO') and @tallerAuthorization.esVehiculoDeOrdenAsignadaAlMecanico(authentication, #patente))")
+    public ResponseEntity<List<OrdenTrabajoResponseDTO>> listarPorVehiculo(@PathVariable @Pattern(regexp = "^[A-Za-z0-9-]{1,20}$") String patente) {
         return ResponseEntity.ok(ordenService.listarPorVehiculo(patente));
     }
 
     @PatchMapping("/{id}/estado")
-    @PreAuthorize("hasAnyRole('ADMIN','MECANICO')")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('MECANICO') and @tallerAuthorization.esOrdenAsignadaAlMecanico(authentication, #id))")
     public ResponseEntity<OrdenTrabajoResponseDTO> cambiarEstado(
-            @PathVariable Integer id, @RequestParam EstadoOrden estado) {
+            @PathVariable @Positive Integer id, @RequestParam EstadoOrden estado) {
         return ResponseEntity.ok(ordenService.cambiarEstado(id, estado));
     }
 
     /** Mecánico envía presupuesto → notifica al cliente, orden pasa a PENDIENTE_APROBACION */
     @PatchMapping("/{id}/presupuesto")
-    @PreAuthorize("hasAnyRole('ADMIN','MECANICO')")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('MECANICO') and @tallerAuthorization.esOrdenAsignadaAlMecanico(authentication, #id))")
     public ResponseEntity<OrdenTrabajoResponseDTO> enviarPresupuesto(
-            @PathVariable Integer id, @Valid @RequestBody PresupuestoRequestDTO req) {
-        return ResponseEntity.ok(ordenService.enviarPresupuesto(id, req));
+            @PathVariable @Positive Integer id, @Valid @RequestBody PresupuestoRequestDTO request) {
+        return ResponseEntity.ok(ordenService.enviarPresupuesto(id, request));
     }
 
     /** Cliente aprueba el presupuesto → orden pasa a EN_PROGRESO */
     @PatchMapping("/{id}/aprobar-presupuesto")
-    @PreAuthorize("hasAnyRole('ADMIN','CLIENTE')")
-    public ResponseEntity<OrdenTrabajoResponseDTO> aprobarPresupuesto(@PathVariable Integer id) {
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and @tallerAuthorization.esOrdenDelCliente(authentication, #id))")
+    public ResponseEntity<OrdenTrabajoResponseDTO> aprobarPresupuesto(@PathVariable @Positive Integer id) {
         return ResponseEntity.ok(ordenService.aprobarPresupuesto(id));
     }
 
     /** Cliente rechaza el presupuesto → orden vuelve a PENDIENTE */
     @PatchMapping("/{id}/rechazar-presupuesto")
-    @PreAuthorize("hasAnyRole('ADMIN','CLIENTE')")
-    public ResponseEntity<OrdenTrabajoResponseDTO> rechazarPresupuesto(@PathVariable Integer id) {
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and @tallerAuthorization.esOrdenDelCliente(authentication, #id))")
+    public ResponseEntity<OrdenTrabajoResponseDTO> rechazarPresupuesto(@PathVariable @Positive Integer id) {
         return ResponseEntity.ok(ordenService.rechazarPresupuesto(id));
     }
 
     /** Mecánico marca la orden como completada → notifica al cliente y genera factura */
     @PatchMapping("/{id}/completar")
-    @PreAuthorize("hasAnyRole('ADMIN','MECANICO')")
-    public ResponseEntity<OrdenTrabajoResponseDTO> marcarCompletada(@PathVariable Integer id) {
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('MECANICO') and @tallerAuthorization.esOrdenAsignadaAlMecanico(authentication, #id))")
+    public ResponseEntity<OrdenTrabajoResponseDTO> marcarCompletada(@PathVariable @Positive Integer id) {
         return ResponseEntity.ok(ordenService.marcarCompletada(id));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','MECANICO','CLIENTE')")
-    public ResponseEntity<Void> cancelar(@PathVariable Integer id) {
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('MECANICO') and @tallerAuthorization.esOrdenAsignadaAlMecanico(authentication, #id))")
+    public ResponseEntity<Void> cancelar(@PathVariable @Positive Integer id) {
         ordenService.cancelar(id);
         return ResponseEntity.noContent().build();
     }

@@ -10,10 +10,7 @@ import com.example.backend_tallerautomotriz.entity.Usuario;
 import com.example.backend_tallerautomotriz.enums.NombreRol;
 import com.example.backend_tallerautomotriz.exception.BusinessRuleException;
 import com.example.backend_tallerautomotriz.exception.EntityNotFoundException;
-import com.example.backend_tallerautomotriz.repository.MecanicoRepository;
-import com.example.backend_tallerautomotriz.repository.RolRepository;
-import com.example.backend_tallerautomotriz.repository.SucursalRepository;
-import com.example.backend_tallerautomotriz.repository.UsuarioRepository;
+import com.example.backend_tallerautomotriz.repository.*;
 import com.example.backend_tallerautomotriz.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -28,86 +25,124 @@ public class UsuarioServiceImpl implements UsuarioService {
     private final UsuarioRepository usuarioRepo;
     private final RolRepository rolRepo;
     private final MecanicoRepository mecanicoRepo;
+    private final ClienteRepository clienteRepo;
     private final SucursalRepository sucursalRepo;
+    private final OrdenTrabajoRepository ordenRepo;
+    private final CitaRepository citaRepo;
 
     @Override
+    @Transactional(readOnly = true)
     public List<UsuarioResponseDTO> listarTodos() {
-        return usuarioRepo.findAll().stream().map(this::toDTO).collect(Collectors.toList());
+        return usuarioRepo.findAll().stream().map(this::toDTO).toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public UsuarioResponseDTO obtenerPorId(Integer id) {
         return toDTO(buscar(id));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public UsuarioResponseDTO buscarPorEmail(String email) {
-        Usuario u = usuarioRepo.findByEmail(email)
-                .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado con email: " + email));
-        return toDTO(u);
-    }
-
-    @Override
-    public UsuarioResponseDTO actualizar(Integer id, UsuarioRequestDTO req) {
-        Usuario u = buscar(id);
-        u.setNombre(req.getNombre());
-        u.setApellido(req.getApellido());
-        return toDTO(usuarioRepo.save(u));
-    }
-
-    @Override
-    public void eliminar(Integer id) {
-        buscar(id);
-        usuarioRepo.deleteById(id);
-    }
-
-    @Override
-    public void desbloquear(Integer id) {
-        Usuario u = buscar(id);
-        u.setBloqueado(false);
-        u.setIntentosFallidos(0);
-        usuarioRepo.save(u);
+        return toDTO(usuarioRepo.findByEmailIgnoreCase(email.trim())
+                .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado con email: " + email)));
     }
 
     @Override
     @Transactional
-    public UsuarioResponseDTO cambiarRol(Integer usuarioId, CambiarRolRequestDTO req) {
-        Usuario usuario = buscar(usuarioId);
-
-        NombreRol nuevoNombreRol;
-        try {
-            nuevoNombreRol = NombreRol.valueOf(req.getNuevoRol().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new BusinessRuleException("Rol inválido: " + req.getNuevoRol() + ". Use: CLIENTE, MECANICO, ADMIN");
-        }
-
-        Rol nuevoRol = rolRepo.findByNombre(nuevoNombreRol)
-                .orElseThrow(() -> new EntityNotFoundException("Rol no encontrado: " + nuevoNombreRol));
-
-        NombreRol rolActual = usuario.getRol().getNombre();
-
-        // Si se promueve a MECANICO, crear el registro de mecánico
-        if (nuevoNombreRol == NombreRol.MECANICO && rolActual != NombreRol.MECANICO) {
-            if (req.getSucursalId() == null)
-                throw new BusinessRuleException("Se requiere sucursalId para asignar el rol MECANICO");
-
-            Sucursal sucursal = sucursalRepo.findById(req.getSucursalId())
-                    .orElseThrow(() -> new EntityNotFoundException("Sucursal no encontrada: " + req.getSucursalId()));
-
-            // Verificar que no tenga ya un registro de mecánico (edge case)
-            if (mecanicoRepo.findByUsuarioId(usuarioId).isEmpty()) {
-                Mecanico mecanico = new Mecanico(null, usuario, sucursal);
-                mecanicoRepo.save(mecanico);
-            }
-        }
-
-        // Si se degrada desde MECANICO, eliminar el registro de mecánico
-        if (rolActual == NombreRol.MECANICO && nuevoNombreRol != NombreRol.MECANICO) {
-            mecanicoRepo.findByUsuarioId(usuarioId).ifPresent(mecanicoRepo::delete);
-        }
-
-        usuario.setRol(nuevoRol);
+    public UsuarioResponseDTO actualizar(Integer id, UsuarioRequestDTO request) {
+        Usuario usuario = buscar(id);
+        usuario.setNombre(request.getNombre().trim());
+        usuario.setApellido(request.getApellido().trim());
         return toDTO(usuarioRepo.save(usuario));
+    }
+
+    @Override
+    @Transactional
+    public void eliminar(Integer id) {
+        usuarioRepo.delete(buscar(id));
+    }
+
+    @Override
+    @Transactional
+    public void desbloquear(Integer id) {
+        Usuario usuario = buscar(id);
+        usuario.setBloqueado(false);
+        usuario.setIntentosFallidos(0);
+        usuarioRepo.save(usuario);
+    }
+
+    private void prepararCambioAMecanico(
+            Usuario usuario,
+            NombreRol actual,
+            NombreRol nuevo,
+            Integer sucursalId) {
+        if (nuevo != NombreRol.MECANICO || actual == NombreRol.MECANICO) {
+            return;
+        }
+        if (sucursalId == null) {
+            throw new BusinessRuleException("Se requiere sucursalId para asignar el rol MECANICO");
+        }
+        Sucursal sucursal = buscarSucursal(sucursalId);
+        if (mecanicoRepo.findByUsuarioId(usuario.getId()).isEmpty()) {
+            mecanicoRepo.save(new Mecanico(null, usuario, sucursal));
+        }
+    }
+
+    private void actualizarSucursalMecanicoSiAplica(Integer usuarioId, Integer sucursalId, NombreRol rol) {
+        if (rol != NombreRol.MECANICO || sucursalId == null) {
+            return;
+        }
+        Mecanico mecanico = mecanicoRepo.findByUsuarioId(usuarioId)
+                .orElseThrow(() -> new EntityNotFoundException("Perfil de mecanico no encontrado"));
+        mecanico.setSucursal(buscarSucursal(sucursalId));
+        mecanicoRepo.save(mecanico);
+    }
+
+    private Sucursal buscarSucursal(Integer sucursalId) {
+        return sucursalRepo.findById(sucursalId)
+                .orElseThrow(() -> new EntityNotFoundException("Sucursal no encontrada: " + sucursalId));
+    }
+
+    private void prepararCambioDesdeMecanico(Integer usuarioId, NombreRol actual, NombreRol nuevo) {
+        if (actual != NombreRol.MECANICO || nuevo == NombreRol.MECANICO) {
+            return;
+        }
+        mecanicoRepo.findByUsuarioId(usuarioId).ifPresent(mecanico -> {
+            if (ordenRepo.existsByMecanicoId(mecanico.getId()) || citaRepo.existsByMecanicoId(mecanico.getId())) {
+                throw new BusinessRuleException("No se puede cambiar el rol de un mecanico con asignaciones");
+            }
+            mecanicoRepo.delete(mecanico);
+        });
+    }
+
+    @Override
+    @Transactional
+    public UsuarioResponseDTO cambiarRol(Integer usuarioId, CambiarRolRequestDTO request) {
+        Usuario usuario = buscar(usuarioId);
+        NombreRol rolActual = usuario.getRol().getNombre();
+        NombreRol nuevoRol = request.getNuevoRol();
+        if (rolActual == nuevoRol) {
+            actualizarSucursalMecanicoSiAplica(usuarioId, request.getSucursalId(), nuevoRol);
+            return toDTO(usuario);
+        }
+
+        validarCambioDesdeCliente(usuarioId, rolActual, nuevoRol);
+        prepararCambioDesdeMecanico(usuarioId, rolActual, nuevoRol);
+        prepararCambioAMecanico(usuario, rolActual, nuevoRol, request.getSucursalId());
+        Rol rol = rolRepo.findByNombre(nuevoRol)
+                .orElseThrow(() -> new EntityNotFoundException("Rol no encontrado: " + nuevoRol));
+        usuario.setRol(rol);
+        return toDTO(usuarioRepo.save(usuario));
+    }
+
+    private void validarCambioDesdeCliente(Integer usuarioId, NombreRol actual, NombreRol nuevo) {
+        if (actual == NombreRol.CLIENTE
+                && nuevo != NombreRol.CLIENTE
+                && clienteRepo.findByUsuarioId(usuarioId).isPresent()) {
+            throw new BusinessRuleException("No se puede cambiar el rol mientras exista un perfil de cliente");
+        }
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
@@ -117,9 +152,13 @@ public class UsuarioServiceImpl implements UsuarioService {
                 .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado: " + id));
     }
 
-    private UsuarioResponseDTO toDTO(Usuario u) {
+    private UsuarioResponseDTO toDTO(Usuario usuario) {
         return new UsuarioResponseDTO(
-                u.getId(), u.getEmail(), u.getNombre(),
-                u.getApellido(), u.getRol().getNombre().name(), u.isBloqueado());
+                usuario.getId(),
+                usuario.getEmail(),
+                usuario.getNombre(),
+                usuario.getApellido(),
+                usuario.getRol().getNombre().name(),
+                usuario.isBloqueado());
     }
 }

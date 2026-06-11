@@ -16,6 +16,8 @@ public interface NotificacionRepository extends JpaRepository<Notificacion, Inte
 
     long countByUsuarioIdAndLeidaFalse(Integer usuarioId);
 
+    boolean existsByIdAndUsuarioEmailIgnoreCase(Integer id, String email);
+
     @Modifying
     @Query("UPDATE Notificacion n SET n.leida = true WHERE n.usuario.id = :usuarioId")
     void marcarTodasComoLeidas(Integer usuarioId);
