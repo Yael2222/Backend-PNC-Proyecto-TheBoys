@@ -57,22 +57,34 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponseDTO register(RegisterRequestDTO req) {
+
         if (usuarioRepo.existsByEmail(req.getEmail()))
             throw new DuplicateResourceException("El email ya está registrado");
 
-        NombreRol nombreRol = NombreRol.valueOf(req.getRol().toUpperCase());
-        Rol rol = rolRepo.findByNombre(nombreRol)
-                .orElseThrow(() -> new EntityNotFoundException("Rol no encontrado: " + req.getRol()));
+        Rol rol = rolRepo.findByNombre(NombreRol.CLIENTE)
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Rol CLIENTE no encontrado"));
 
         Usuario usuario = new Usuario();
+
         usuario.setEmail(req.getEmail());
         usuario.setPassword(passwordEncoder.encode(req.getPassword()));
         usuario.setNombre(req.getNombre());
         usuario.setApellido(req.getApellido());
         usuario.setRol(rol);
+
         usuarioRepo.save(usuario);
 
-        String token = jwtProvider.generateToken(usuario.getEmail(), rol.getNombre().name());
-        return new AuthResponseDTO(token, usuario.getEmail(), rol.getNombre().name(), usuario.getNombre());
+        String token = jwtProvider.generateToken(
+                usuario.getEmail(),
+                rol.getNombre().name()
+        );
+
+        return new AuthResponseDTO(
+                token,
+                usuario.getEmail(),
+                rol.getNombre().name(),
+                usuario.getNombre()
+        );
     }
 }

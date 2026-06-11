@@ -9,6 +9,7 @@ public class OrdenTrabajoRequestDTO {
     @NotBlank private String patente;
     @NotNull  private Integer clienteId;
     private Integer mecanicoId;
+    private Integer sucursalId;
     @NotBlank private String tipoOrden;
     private String comentarios;
     @NotEmpty private List<OrdenServicioRequestDTO> servicios;
