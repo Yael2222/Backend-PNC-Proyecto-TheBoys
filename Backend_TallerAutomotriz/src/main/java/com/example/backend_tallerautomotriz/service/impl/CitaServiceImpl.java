@@ -50,6 +50,7 @@ public class CitaServiceImpl implements CitaService {
             validarDisponibilidadMecanico(m.getId(), req.getFecha(), req.getHora(), null);
         }
 
+
         List<Servicio> servicios = new ArrayList<>();
         if (req.getServicioIds() != null) {
             for (Integer sid : req.getServicioIds()) {
@@ -196,6 +197,8 @@ public class CitaServiceImpl implements CitaService {
     private void validarHorarioLaboral(LocalTime hora) {
         if (hora.isBefore(HORA_INICIO) || hora.isAfter(HORA_FIN.minusMinutes(1)))
             throw new BusinessRuleException("La hora debe estar entre las 09:00 y las 19:00");
+        if (hora.getMinute() != 0)
+            throw new BusinessRuleException("Las citas deben agendarse en horas en punto (ej: 09:00, 10:00)");
     }
 
     private void validarDisponibilidadMecanico(Integer mecanicoId, LocalDate fecha, LocalTime hora, Integer citaIdExcluir) {

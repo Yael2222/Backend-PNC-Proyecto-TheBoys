@@ -1,5 +1,6 @@
 package com.example.backend_tallerautomotriz.entity;
 
+import com.example.backend_tallerautomotriz.enums.CategoriaRepuesto;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -20,4 +21,10 @@ public class Repuesto {
 
     @Column(name = "precio_unitario", nullable = false)
     private BigDecimal precioUnitario;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private CategoriaRepuesto categoria;
+
+    private String descripcion;
 }

@@ -30,10 +30,20 @@ public interface OrdenTrabajoRepository extends JpaRepository<OrdenTrabajo, Inte
             "com.example.backend_tallerautomotriz.enums.EstadoOrden.CANCELADA)")
     List<OrdenTrabajo> findActivasByMecanicoId(Integer mecanicoId);
 
+    // Reportes por rango de fechas
     @Query("SELECT o FROM OrdenTrabajo o WHERE o.fechaCreacion BETWEEN :desde AND :hasta")
     List<OrdenTrabajo> findByFechaCreacionBetween(LocalDate desde, LocalDate hasta);
 
     @Query("SELECT o FROM OrdenTrabajo o WHERE o.sucursal.id = :sucursalId " +
             "AND o.fechaCreacion BETWEEN :desde AND :hasta")
     List<OrdenTrabajo> findBySucursalIdAndFechaCreacionBetween(Integer sucursalId, LocalDate desde, LocalDate hasta);
+
+    // Reporte: cantidad de órdenes por sucursal
+    @Query("SELECT o.sucursal.id, o.sucursal.nombre, COUNT(o) FROM OrdenTrabajo o " +
+            "WHERE o.sucursal IS NOT NULL GROUP BY o.sucursal.id, o.sucursal.nombre ORDER BY COUNT(o) DESC")
+    List<Object[]> countOrdenesPorSucursal();
+
+    // Reporte: cantidad de órdenes por estado
+    @Query("SELECT o.estado, COUNT(o) FROM OrdenTrabajo o GROUP BY o.estado")
+    List<Object[]> countByEstado();
 }
