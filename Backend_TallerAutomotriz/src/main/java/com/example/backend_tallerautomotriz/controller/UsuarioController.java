@@ -2,11 +2,14 @@ package com.example.backend_tallerautomotriz.controller;
 
 import com.example.backend_tallerautomotriz.dto.request.UsuarioRequestDTO;
 import com.example.backend_tallerautomotriz.dto.response.UsuarioResponseDTO;
+import com.example.backend_tallerautomotriz.security.UserDetailsServiceImpl;
 import com.example.backend_tallerautomotriz.service.UsuarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -15,6 +18,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UsuarioController {
     private final UsuarioService usuarioService;
+    private final UserDetailsServiceImpl userDetailsServiceImpl;
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -36,14 +40,19 @@ public class UsuarioController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> eliminar(@PathVariable Integer id) {
-        usuarioService.eliminar(id); return ResponseEntity.noContent().build();
+    public ResponseEntity<Void> eliminar(@PathVariable Integer id, UserDetails userDetails) {
+        usuarioService.eliminar(id, userDetails.getUsername()); return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/desbloquear")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> desbloquear(@PathVariable Integer id) {
         usuarioService.desbloquear(id); return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UsuarioResponseDTO> obtenerPerfil(@AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(usuarioService.obtenerPerfil(userDetails.getUsername()));
     }
 }
 

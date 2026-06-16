@@ -7,6 +7,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -35,8 +37,8 @@ public class VehiculoController {
     }
     @PutMapping("/{patente}")
     @PreAuthorize("hasAnyRole('ADMIN','CLIENTE')")
-    public ResponseEntity<VehiculoResponseDTO> actualizar(@PathVariable String patente, @Valid @RequestBody VehiculoRequestDTO req) {
-        return ResponseEntity.ok(vehiculoService.actualizar(patente, req));
+    public ResponseEntity<VehiculoResponseDTO> actualizar(@PathVariable String patente, @Valid @RequestBody VehiculoRequestDTO req, @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(vehiculoService.actualizar(patente, req, userDetails.getUsername()));
     }
     @DeleteMapping("/{patente}")
     @PreAuthorize("hasRole('ADMIN')")
