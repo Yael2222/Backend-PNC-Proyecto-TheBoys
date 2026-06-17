@@ -14,6 +14,8 @@ import java.util.Optional;
 public interface InventarioRepository extends JpaRepository<Inventario, Integer> {
     Optional<Inventario> findBySucursalIdAndRepuestoId(Integer sucursalId, Integer repuestoId);
     List<Inventario> findBySucursalId(Integer sucursalId);
+    boolean existsBySucursalId(Integer sucursalId);
+    boolean existsByRepuestoId(Integer repuestoId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select i from Inventario i where i.id = :id")
