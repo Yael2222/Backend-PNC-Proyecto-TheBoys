@@ -4,6 +4,7 @@ import com.example.backend_tallerautomotriz.enums.EstadoOrden;
 import com.example.backend_tallerautomotriz.enums.TipoOrden;
 import jakarta.persistence.*;
 import lombok.*;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.List;
 @Table(name = "orden_trabajo")
 @Data @NoArgsConstructor @AllArgsConstructor
 public class OrdenTrabajo {
+
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
@@ -27,6 +29,10 @@ public class OrdenTrabajo {
     @JoinColumn(name = "mecanico_id")
     private Mecanico mecanico;
 
+    @ManyToOne
+    @JoinColumn(name = "sucursal_id")
+    private Sucursal sucursal;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "tipo_orden")
     private TipoOrden tipoOrden;
@@ -38,7 +44,13 @@ public class OrdenTrabajo {
     @Column(name = "fecha_creacion")
     private LocalDate fechaCreacion = LocalDate.now();
 
+    @Column(name = "fecha_finalizacion_estimada")
+    private LocalDate fechaFinalizacionEstimada;
+
     private String comentarios;
+
+    @Column(name = "presupuesto_total", precision = 12, scale = 2)
+    private BigDecimal presupuestoTotal;
 
     @OneToMany(mappedBy = "orden", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrdenServicio> servicios = new ArrayList<>();

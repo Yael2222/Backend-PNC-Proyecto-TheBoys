@@ -8,4 +8,5 @@ import java.util.List;
 @Repository
 public interface VehiculoRepository extends JpaRepository<Vehiculo, String> {
     List<Vehiculo> findByClienteId(Integer clienteId);
+    boolean existsByPatenteIgnoreCaseAndClienteUsuarioEmailIgnoreCase(String patente, String email);
 }
