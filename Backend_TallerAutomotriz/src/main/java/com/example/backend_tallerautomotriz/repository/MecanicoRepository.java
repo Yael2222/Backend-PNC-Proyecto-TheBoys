@@ -13,11 +13,9 @@ import java.util.Optional;
 @Repository
 public interface MecanicoRepository extends JpaRepository<Mecanico, Integer> {
     Optional<Mecanico> findByUsuarioId(Integer usuarioId);
-
     List<Mecanico> findBySucursalId(Integer sucursalId);
-
+    boolean existsBySucursalId(Integer sucursalId);
     boolean existsByIdAndUsuarioEmailIgnoreCase(Integer id, String email);
-
     boolean existsBySucursalIdAndUsuarioEmailIgnoreCase(Integer sucursalId, String email);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

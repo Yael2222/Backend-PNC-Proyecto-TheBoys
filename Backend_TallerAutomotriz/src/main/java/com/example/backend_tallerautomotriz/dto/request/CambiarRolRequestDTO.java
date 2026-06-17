@@ -7,7 +7,7 @@ import lombok.*;
 @Data @NoArgsConstructor @AllArgsConstructor
 public class CambiarRolRequestDTO {
 
-    @NotBlank(message = "El rol es obligatorio")
+    @NotNull(message = "El rol es obligatorio")
     private NombreRol nuevoRol; // "CLIENTE", "MECANICO", "ADMIN"
 
     private Integer sucursalId;

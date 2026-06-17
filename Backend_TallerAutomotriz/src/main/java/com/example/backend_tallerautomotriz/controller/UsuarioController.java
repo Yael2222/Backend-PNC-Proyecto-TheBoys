@@ -2,12 +2,14 @@ package com.example.backend_tallerautomotriz.controller;
 
 import com.example.backend_tallerautomotriz.dto.request.CambiarRolRequestDTO;
 import com.example.backend_tallerautomotriz.dto.request.UsuarioRequestDTO;
+import com.example.backend_tallerautomotriz.dto.request.UsuarioUpdatePasswordDTO;
 import com.example.backend_tallerautomotriz.dto.response.UsuarioResponseDTO;
 import com.example.backend_tallerautomotriz.service.UsuarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -29,43 +31,60 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.obtenerPorId(id));
     }
 
-    @PutMapping("/{id}")
+    @GetMapping("/buscar")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UsuarioResponseDTO> buscarPorEmail(@RequestParam String email) {
         return ResponseEntity.ok(usuarioService.buscarPorEmail(email));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','MECANICO','CLIENTE')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UsuarioResponseDTO> actualizar(
-            @PathVariable Integer id, @Valid @RequestBody UsuarioRequestDTO req) {
+            @PathVariable Integer id,
+            @Valid @RequestBody UsuarioRequestDTO req) {
         return ResponseEntity.ok(usuarioService.actualizar(id, req));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> eliminar(@PathVariable Integer id) {
-        usuarioService.eliminar(id); return ResponseEntity.noContent().build();
+    public ResponseEntity<Void> eliminar(@PathVariable Integer id, Authentication authentication) {
+        usuarioService.eliminar(id, authentication.getName());
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/desbloquear")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> desbloquear(@PathVariable Integer id) {
+    public ResponseEntity<UsuarioResponseDTO> desbloquear(@PathVariable Integer id) {
         usuarioService.desbloquear(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(usuarioService.obtenerPorId(id));
     }
 
-    /**
-     * Admin cambia el rol de un usuario.
-     * Para promover a MECANICO se requiere sucursalId en el body.
-     * Ejemplo: PATCH /api/v1/usuarios/5/cambiar-rol
-     * Body: { "nuevoRol": "MECANICO", "sucursalId": 2 }
-     */
     @PatchMapping("/{id}/cambiar-rol")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UsuarioResponseDTO> cambiarRol(
             @PathVariable Integer id, @Valid @RequestBody CambiarRolRequestDTO req) {
         return ResponseEntity.ok(usuarioService.cambiarRol(id, req));
+    }
+
+    //Permite modificar el propio perfil para cualquier rol autenticado
+    @GetMapping("/me")
+    public ResponseEntity<UsuarioResponseDTO> obtenerPerfil(Authentication authentication) {
+        return ResponseEntity.ok(usuarioService.obtenerPerfil(authentication.getName()));
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<UsuarioResponseDTO> actualizarPerfil(
+            Authentication authentication,
+            @Valid @RequestBody UsuarioRequestDTO req) {
+        return ResponseEntity.ok(usuarioService.actualizarPerfil(authentication.getName(), req));
+    }
+
+    @PatchMapping("/me/password")
+    public ResponseEntity<Void> cambiarPassword(
+            Authentication authentication,
+            @Valid @RequestBody UsuarioUpdatePasswordDTO req) {
+        usuarioService.cambiarPassword(authentication.getName(), req);
+        return ResponseEntity.noContent().build();
     }
 }
 

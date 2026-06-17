@@ -31,6 +31,8 @@ public interface OrdenTrabajoRepository extends JpaRepository<OrdenTrabajo, Inte
 
     boolean existsByVehiculoPatenteIgnoreCaseAndMecanicoUsuarioEmailIgnoreCase(String patente, String email);
 
+    boolean existsByVehiculoPatenteIgnoreCaseAndEstadoNotIn(String patente, List<EstadoOrden> estados);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select o from OrdenTrabajo o where o.id = :id")
     Optional<OrdenTrabajo> findByIdForUpdate(@Param("id") Integer id);

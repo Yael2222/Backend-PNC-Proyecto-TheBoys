@@ -2,6 +2,7 @@ package com.example.backend_tallerautomotriz.service.impl;
 
 import com.example.backend_tallerautomotriz.dto.request.CambiarRolRequestDTO;
 import com.example.backend_tallerautomotriz.dto.request.UsuarioRequestDTO;
+import com.example.backend_tallerautomotriz.dto.request.UsuarioUpdatePasswordDTO;
 import com.example.backend_tallerautomotriz.dto.response.UsuarioResponseDTO;
 import com.example.backend_tallerautomotriz.entity.Mecanico;
 import com.example.backend_tallerautomotriz.entity.Rol;
@@ -13,6 +14,7 @@ import com.example.backend_tallerautomotriz.exception.EntityNotFoundException;
 import com.example.backend_tallerautomotriz.repository.*;
 import com.example.backend_tallerautomotriz.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -29,6 +31,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     private final SucursalRepository sucursalRepo;
     private final OrdenTrabajoRepository ordenRepo;
     private final CitaRepository citaRepo;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional(readOnly = true)
@@ -60,8 +63,12 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     @Transactional
-    public void eliminar(Integer id) {
-        usuarioRepo.delete(buscar(id));
+    public void eliminar(Integer id, String emailSolicitante) {
+        Usuario usuario = buscar(id);
+        if (usuario.getEmail().equalsIgnoreCase(emailSolicitante)) {
+            throw new BusinessRuleException("No puedes eliminar tu propia cuenta de administrador");
+        }
+        usuarioRepo.delete(usuario);
     }
 
     @Override
@@ -88,6 +95,37 @@ public class UsuarioServiceImpl implements UsuarioService {
         if (mecanicoRepo.findByUsuarioId(usuario.getId()).isEmpty()) {
             mecanicoRepo.save(new Mecanico(null, usuario, sucursal));
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UsuarioResponseDTO obtenerPerfil(String email) {
+        return toDTO(buscarPorEmailInterno(email));
+    }
+
+    @Override
+    @Transactional
+    public UsuarioResponseDTO actualizarPerfil(String email, UsuarioRequestDTO request) {
+        Usuario usuario = buscarPorEmailInterno(email);
+        usuario.setNombre(request.getNombre().trim());
+        usuario.setApellido(request.getApellido().trim());
+        return toDTO(usuarioRepo.save(usuario));
+    }
+
+    @Override
+    @Transactional
+    public void cambiarPassword(String email, UsuarioUpdatePasswordDTO request) {
+        Usuario usuario = buscarPorEmailInterno(email);
+
+        if (!passwordEncoder.matches(request.getPasswordActual(), usuario.getPassword())) {
+            throw new BusinessRuleException("La contraseña actual es incorrecta");
+        }
+        if (passwordEncoder.matches(request.getPasswordNueva(), usuario.getPassword())) {
+            throw new BusinessRuleException("La nueva contraseña no puede ser igual a la actual");
+        }
+
+        usuario.setPassword(passwordEncoder.encode(request.getPasswordNueva()));
+        usuarioRepo.save(usuario);
     }
 
     private void actualizarSucursalMecanicoSiAplica(Integer usuarioId, Integer sucursalId, NombreRol rol) {
@@ -145,11 +183,16 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
     }
 
-    // ── helpers ──────────────────────────────────────────────────────────────
+    // Helpers
 
     private Usuario buscar(Integer id) {
         return usuarioRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado: " + id));
+    }
+
+    private Usuario buscarPorEmailInterno(String email) {
+        return usuarioRepo.findByEmailIgnoreCase(email.trim())
+                .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado con email: " + email));
     }
 
     private UsuarioResponseDTO toDTO(Usuario usuario) {
