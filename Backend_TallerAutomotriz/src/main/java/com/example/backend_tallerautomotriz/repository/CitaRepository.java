@@ -50,4 +50,7 @@ public interface CitaRepository extends JpaRepository<Cita, Integer> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select c from Cita c where c.id = :id")
     java.util.Optional<Cita> findByIdForUpdate(@Param("id") Integer id);
+
+    boolean existsByMecanicoIdAndFechaAndHora(Integer mecanicoId, LocalDate fecha, LocalTime hora);
+    boolean existsByMecanicoIdAndFechaAndHoraAndIdNot(Integer mecanicoId, LocalDate fecha, LocalTime hora, Integer id);
 }

@@ -5,6 +5,7 @@ import com.example.backend_tallerautomotriz.dto.response.InventarioResponseDTO;
 import com.example.backend_tallerautomotriz.entity.Inventario;
 import com.example.backend_tallerautomotriz.entity.Repuesto;
 import com.example.backend_tallerautomotriz.entity.Sucursal;
+import com.example.backend_tallerautomotriz.enums.CategoriaRepuesto;
 import com.example.backend_tallerautomotriz.exception.BusinessRuleException;
 import com.example.backend_tallerautomotriz.exception.DuplicateResourceException;
 import com.example.backend_tallerautomotriz.exception.EntityNotFoundException;
@@ -15,7 +16,6 @@ import com.example.backend_tallerautomotriz.service.InventarioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -80,13 +80,40 @@ public class InventarioServiceImpl implements InventarioService {
                 .orElseThrow(() -> new EntityNotFoundException("Inventario no encontrado: " + id));
     }
 
-    private InventarioResponseDTO toDTO(Inventario inventario) {
+    @Override
+    public List<InventarioResponseDTO> filtrar(Integer sucursalId, String categoria, String nombre) {
+        List<Inventario> resultado;
+        boolean tieneCategoria = categoria != null && !categoria.isBlank();
+        boolean tieneNombre    = nombre    != null && !nombre.isBlank();
+
+        if (tieneCategoria && tieneNombre) {
+            resultado = repo.findBySucursalIdAndCategoriaAndNombre(sucursalId, parsearCategoria(categoria), nombre);
+        } else if (tieneCategoria) {
+            resultado = repo.findBySucursalIdAndCategoria(sucursalId, parsearCategoria(categoria));
+        } else if (tieneNombre) {
+            resultado = repo.findBySucursalIdAndNombre(sucursalId, nombre);
+        } else {
+            resultado = repo.findBySucursalId(sucursalId);
+        }
+
+        return resultado.stream().map(this::toDTO).collect(Collectors.toList());
+    }
+
+    private CategoriaRepuesto parsearCategoria(String cat) {
+        try {
+            return CategoriaRepuesto.valueOf(cat.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new BusinessRuleException("Categoría inválida: " + cat);
+        }
+    }
+
+    private InventarioResponseDTO toDTO(Inventario i) {
         return new InventarioResponseDTO(
-                inventario.getId(),
-                inventario.getSucursal().getNombre(),
-                inventario.getRepuesto().getNombre(),
-                inventario.getStockTotal(),
-                inventario.getFechaActualizacion());
+                i.getId(),
+                i.getSucursal().getId(), i.getSucursal().getNombre(),
+                i.getRepuesto().getId(), i.getRepuesto().getNombre(),
+                i.getRepuesto().getCategoria().name(),
+                i.getRepuesto().getPrecioUnitario(),
+                i.getStockTotal(), i.getFechaActualizacion());
     }
 }
-

@@ -19,28 +19,24 @@ public class NotificacionController {
 
     private final NotificacionService notificacionService;
 
-    /** Todas las notificaciones del usuario */
     @GetMapping("/usuario/{usuarioId}")
     @PreAuthorize("hasRole('ADMIN') or @tallerAuthorization.esUsuarioPropietario(authentication, #usuarioId)")
     public ResponseEntity<List<NotificacionResponseDTO>> listar(@PathVariable @Positive Integer usuarioId) {
         return ResponseEntity.ok(notificacionService.listarPorUsuario(usuarioId));
     }
 
-    /** Solo las no leídas */
     @GetMapping("/usuario/{usuarioId}/no-leidas")
     @PreAuthorize("hasRole('ADMIN') or @tallerAuthorization.esUsuarioPropietario(authentication, #usuarioId)")
     public ResponseEntity<List<NotificacionResponseDTO>> listarNoLeidas(@PathVariable @Positive Integer usuarioId) {
         return ResponseEntity.ok(notificacionService.listarNoLeidas(usuarioId));
     }
 
-    /** Contador de no leídas (para el badge del frontend) */
     @GetMapping("/usuario/{usuarioId}/contador")
     @PreAuthorize("hasRole('ADMIN') or @tallerAuthorization.esUsuarioPropietario(authentication, #usuarioId)")
     public ResponseEntity<Map<String, Long>> contarNoLeidas(@PathVariable @Positive Integer usuarioId) {
         return ResponseEntity.ok(Map.of("noLeidas", notificacionService.contarNoLeidas(usuarioId)));
     }
 
-    /** Marcar una notificación como leída */
     @PatchMapping("/{id}/leer")
     @PreAuthorize("hasRole('ADMIN') or @tallerAuthorization.esNotificacionDelUsuario(authentication, #id)")
     public ResponseEntity<Void> marcarComoLeida(@PathVariable @Positive Integer id) {
@@ -48,7 +44,6 @@ public class NotificacionController {
         return ResponseEntity.noContent().build();
     }
 
-    /** Marcar todas como leídas */
     @PatchMapping("/usuario/{usuarioId}/leer-todas")
     @PreAuthorize("hasRole('ADMIN') or @tallerAuthorization.esUsuarioPropietario(authentication, #usuarioId)")
     public ResponseEntity<Void> marcarTodasComoLeidas(@PathVariable @Positive Integer usuarioId) {

@@ -17,6 +17,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Validated
 public class InventarioController {
+
     private final InventarioService inventarioService;
 
     @PostMapping
@@ -51,5 +52,17 @@ public class InventarioController {
         inventarioService.eliminar(id);
         return ResponseEntity.noContent().build();
     }
-}
 
+    /**
+     * Filtro combinable: GET /api/v1/inventario/sucursal/1/filtrar?categoria=MOTOR&nombre=filtro
+     * categoria y nombre son opcionales.
+     */
+    @GetMapping("/sucursal/{sucursalId}/filtrar")
+    @PreAuthorize("hasAnyRole('ADMIN','MECANICO')")
+    public ResponseEntity<List<InventarioResponseDTO>> filtrar(
+            @PathVariable Integer sucursalId,
+            @RequestParam(required = false) String categoria,
+            @RequestParam(required = false) String nombre) {
+        return ResponseEntity.ok(inventarioService.filtrar(sucursalId, categoria, nombre));
+    }
+}

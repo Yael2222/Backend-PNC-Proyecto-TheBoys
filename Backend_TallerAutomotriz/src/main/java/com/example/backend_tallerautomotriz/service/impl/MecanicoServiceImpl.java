@@ -14,7 +14,11 @@ import com.example.backend_tallerautomotriz.service.MecanicoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.backend_tallerautomotriz.repository.MecanicoRepository;
+import com.example.backend_tallerautomotriz.repository.SucursalRepository;
+import com.example.backend_tallerautomotriz.repository.UsuarioRepository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,6 +29,7 @@ public class MecanicoServiceImpl implements MecanicoService {
     private final SucursalRepository sucursalRepo;
     private final OrdenTrabajoRepository ordenRepo;
     private final CitaRepository citaRepo;
+    private final RegistroHorasRepository registroHorasRepo;
 
     @Override
     @Transactional
@@ -96,13 +101,17 @@ public class MecanicoServiceImpl implements MecanicoService {
                 .orElseThrow(() -> new EntityNotFoundException("Mecanico no encontrado: " + id));
     }
 
-    private MecanicoResponseDTO toDTO(Mecanico mecanico) {
+    private MecanicoResponseDTO toDTO(Mecanico m) {
+        BigDecimal horas = registroHorasRepo.sumHorasByMecanicoId(m.getId());
         return new MecanicoResponseDTO(
-                mecanico.getId(),
-                mecanico.getUsuario().getNombre(),
-                mecanico.getUsuario().getApellido(),
-                mecanico.getUsuario().getEmail(),
-                mecanico.getSucursal().getNombre());
+                m.getId(),
+                m.getUsuario().getId(),
+                m.getUsuario().getNombre(),
+                m.getUsuario().getApellido(),
+                m.getUsuario().getEmail(),
+                m.getSucursal().getId(),
+                m.getSucursal().getNombre(),
+                horas != null ? horas : BigDecimal.ZERO);
     }
-}
 
+}

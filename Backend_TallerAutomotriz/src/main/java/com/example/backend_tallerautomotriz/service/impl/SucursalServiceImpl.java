@@ -92,5 +92,5 @@ public class SucursalServiceImpl implements SucursalService {
     private SucursalResponseDTO toDTO(Sucursal s) {
         return new SucursalResponseDTO(s.getId(), s.getNombre(), s.getDireccion(), s.getDepartamento());
     }
-}
 
+}

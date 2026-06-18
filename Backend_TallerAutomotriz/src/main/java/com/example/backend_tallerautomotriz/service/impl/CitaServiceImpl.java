@@ -324,4 +324,19 @@ public class CitaServiceImpl implements CitaService {
                 cita.getNuevaFechaPropuesta(),
                 cita.getNuevaHoraPropuesta());
     }
+
+    private void validarHorarioLaboral(LocalTime hora) {
+        if (hora.isBefore(HORA_INICIO) || hora.isAfter(HORA_FIN.minusMinutes(1)))
+            throw new BusinessRuleException("La hora debe estar entre las 09:00 y las 19:00");
+        if (hora.getMinute() != 0)
+            throw new BusinessRuleException("Las citas deben agendarse en horas en punto (ej: 09:00, 10:00)");
+    }
+
+    private void validarDisponibilidadMecanico(Integer mecanicoId, LocalDate fecha, LocalTime hora, Integer citaIdExcluir) {
+        boolean ocupado = citaIdExcluir != null
+                ? citaRepo.existsByMecanicoIdAndFechaAndHoraAndIdNot(mecanicoId, fecha, hora, citaIdExcluir)
+                : citaRepo.existsByMecanicoIdAndFechaAndHora(mecanicoId, fecha, hora);
+        if (ocupado)
+            throw new BusinessRuleException("El mecánico ya tiene una cita a esa hora y fecha");
+    }
 }
