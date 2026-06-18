@@ -9,4 +9,6 @@ public class RepuestoRequestDTO {
     @NotNull                    private Integer proveedorId;
     @NotBlank                   private String nombre;
     @NotNull @DecimalMin("0.0") private BigDecimal precioUnitario;
+    @NotBlank                   private String categoria;
+    private String descripcion;
 }

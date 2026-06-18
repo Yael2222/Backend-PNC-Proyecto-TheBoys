@@ -9,4 +9,7 @@ public class RepuestoResponseDTO {
     private String nombre;
     private BigDecimal precioUnitario;
     private String proveedor;
+    private Integer proveedorId;
+    private String categoria;
+    private String descripcion;
 }

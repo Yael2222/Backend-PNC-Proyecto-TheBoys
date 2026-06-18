@@ -2,7 +2,6 @@ package com.example.backend_tallerautomotriz.service;
 
 import com.example.backend_tallerautomotriz.dto.request.SucursalRequestDTO;
 import com.example.backend_tallerautomotriz.dto.response.SucursalResponseDTO;
-
 import java.util.List;
 
 public interface SucursalService {
@@ -12,4 +11,3 @@ public interface SucursalService {
     SucursalResponseDTO actualizar(Integer id, SucursalRequestDTO request);
     void eliminar(Integer id);
 }
-

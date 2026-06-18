@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import com.example.backend_tallerautomotriz.enums.CategoriaRepuesto;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
@@ -26,4 +27,17 @@ public interface InventarioRepository extends JpaRepository<Inventario, Integer>
     Optional<Inventario> findBySucursalIdAndRepuestoIdForUpdate(
             @Param("sucursalId") Integer sucursalId,
             @Param("repuestoId") Integer repuestoId);
+
+    @Query("SELECT i FROM Inventario i WHERE i.sucursal.id = :sucursalId AND i.repuesto.categoria = :categoria")
+    List<Inventario> findBySucursalIdAndCategoria(Integer sucursalId, CategoriaRepuesto categoria);
+
+    @Query("SELECT i FROM Inventario i WHERE i.sucursal.id = :sucursalId " +
+            "AND LOWER(i.repuesto.nombre) LIKE LOWER(CONCAT('%', :nombre, '%'))")
+    List<Inventario> findBySucursalIdAndNombre(Integer sucursalId, String nombre);
+
+    @Query("SELECT i FROM Inventario i WHERE i.sucursal.id = :sucursalId " +
+            "AND i.repuesto.categoria = :categoria " +
+            "AND LOWER(i.repuesto.nombre) LIKE LOWER(CONCAT('%', :nombre, '%'))")
+    List<Inventario> findBySucursalIdAndCategoriaAndNombre(Integer sucursalId, CategoriaRepuesto categoria, String nombre);
+
 }
