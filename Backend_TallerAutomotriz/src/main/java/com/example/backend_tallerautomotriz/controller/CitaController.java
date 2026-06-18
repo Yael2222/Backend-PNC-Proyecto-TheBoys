@@ -5,8 +5,10 @@ import com.example.backend_tallerautomotriz.dto.request.ReprogramarCitaRequestDT
 import com.example.backend_tallerautomotriz.dto.response.CitaResponseDTO;
 import com.example.backend_tallerautomotriz.service.CitaService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -36,7 +38,7 @@ public class CitaController {
     }
 
     @GetMapping("/cliente/{clienteId}")
-    @PreAuthorize("hasAnyRole('ADMIN','MECANICO') or (hasRole('CLIENTE') and @citaAuthorization.esClientePropietario(authentication, #clienteId))")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and @citaAuthorization.esClientePropietario(authentication, #clienteId))")
     public ResponseEntity<List<CitaResponseDTO>> listarPorCliente(@PathVariable @Positive Integer clienteId) {
         return ResponseEntity.ok(citaService.listarPorCliente(clienteId));
     }
@@ -50,22 +52,25 @@ public class CitaController {
     @GetMapping("/sucursal/{sucursalId}")
     @PreAuthorize("hasRole('ADMIN') or (hasRole('MECANICO') and @tallerAuthorization.esSucursalDelMecanico(authentication, #sucursalId))")
     public ResponseEntity<List<CitaResponseDTO>> listarPorSucursal(
-            @PathVariable Integer sucursalId, @RequestParam LocalDate fecha) {
+            @PathVariable @Positive Integer sucursalId,
+            @RequestParam @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
         return ResponseEntity.ok(citaService.listarPorSucursalYFecha(sucursalId, fecha));
     }
 
     /** Citas sin mecánico asignado — el mecánico las ve para aceptarlas */
     @GetMapping("/pendientes")
-    @PreAuthorize("hasAnyRole('ADMIN','MECANICO')")
-    public ResponseEntity<List<CitaResponseDTO>> listarPendientes() {
-        return ResponseEntity.ok(citaService.listarPendientes());
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('MECANICO') and #sucursalId != null and @tallerAuthorization.esSucursalDelMecanico(authentication, #sucursalId))")
+    public ResponseEntity<List<CitaResponseDTO>> listarPendientes(
+            @RequestParam(required = false) @Positive Integer sucursalId) {
+        return ResponseEntity.ok(citaService.listarPendientes(sucursalId));
     }
 
     /** Mecánico acepta una cita y queda asignado */
     @PatchMapping("/{id}/aceptar")
     @PreAuthorize("hasRole('ADMIN') or (hasRole('MECANICO') and @tallerAuthorization.esMecanicoPropietario(authentication, #mecanicoId))")
     public ResponseEntity<CitaResponseDTO> aceptar(
-            @PathVariable @Positive Integer id, @RequestParam @Positive Integer mecanicoId) {
+            @PathVariable @Positive Integer id,
+            @RequestParam @Positive Integer mecanicoId) {
         return ResponseEntity.ok(citaService.aceptar(id, mecanicoId));
     }
 
@@ -73,8 +78,9 @@ public class CitaController {
     @PatchMapping("/{id}/reprogramar")
     @PreAuthorize("hasRole('ADMIN') or (hasRole('MECANICO') and @citaAuthorization.esCitaDelMecanico(authentication, #id))")
     public ResponseEntity<CitaResponseDTO> reprogramar(
-            @PathVariable @Positive Integer id, @Valid @RequestBody ReprogramarCitaRequestDTO req) {
-        return ResponseEntity.ok(citaService.reprogramar(id, req));
+            @PathVariable @Positive Integer id,
+            @Valid @RequestBody ReprogramarCitaRequestDTO request) {
+        return ResponseEntity.ok(citaService.reprogramar(id, request));
     }
 
     /** Cliente acepta la reprogramación propuesta por el mecánico */

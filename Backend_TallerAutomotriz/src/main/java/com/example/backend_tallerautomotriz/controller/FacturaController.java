@@ -22,17 +22,22 @@ public class FacturaController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<FacturaResponseDTO>> listar() { return ResponseEntity.ok(facturaService.listarTodas()); }
+    public ResponseEntity<List<FacturaResponseDTO>> listar() {
+        return ResponseEntity.ok(facturaService.listarTodas());
+    }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and @tallerAuthorization.esFacturaDelCliente(authentication, #id))")
-    public ResponseEntity<FacturaResponseDTO> obtener(@PathVariable @Positive Integer id) { return ResponseEntity.ok(facturaService.obtenerPorId(id)); }
+    public ResponseEntity<FacturaResponseDTO> obtener(@PathVariable @Positive Integer id) {
+        return ResponseEntity.ok(facturaService.obtenerPorId(id));
+    }
 
     @GetMapping("/orden/{ordenId}")
     @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and @tallerAuthorization.esFacturaDeOrdenDelCliente(authentication, #ordenId)) or (hasRole('MECANICO') and @tallerAuthorization.esOrdenAsignadaAlMecanico(authentication, #ordenId))")
     public ResponseEntity<FacturaResponseDTO> obtenerPorOrden(@PathVariable @Positive Integer ordenId) {
         return ResponseEntity.ok(facturaService.obtenerPorOrden(ordenId));
     }
+
     @PostMapping("/pagar")
     @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and @tallerAuthorization.esFacturaDeOrdenDelCliente(authentication, #request.ordenId))")
     public ResponseEntity<FacturaResponseDTO> procesarPago(@Valid @RequestBody FacturaRequestDTO request) {

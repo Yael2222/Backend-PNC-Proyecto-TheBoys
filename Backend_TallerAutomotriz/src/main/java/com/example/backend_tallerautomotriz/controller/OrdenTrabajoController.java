@@ -6,6 +6,7 @@ import com.example.backend_tallerautomotriz.dto.response.OrdenTrabajoResponseDTO
 import com.example.backend_tallerautomotriz.enums.EstadoOrden;
 import com.example.backend_tallerautomotriz.service.OrdenTrabajoService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +31,7 @@ public class OrdenTrabajoController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','MECANICO')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<OrdenTrabajoResponseDTO>> listar() {
         return ResponseEntity.ok(ordenService.listarTodos());
     }
@@ -55,40 +56,39 @@ public class OrdenTrabajoController {
 
     @GetMapping("/vehiculo/{patente}")
     @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and @tallerAuthorization.esVehiculoDelCliente(authentication, #patente)) or (hasRole('MECANICO') and @tallerAuthorization.esVehiculoDeOrdenAsignadaAlMecanico(authentication, #patente))")
-    public ResponseEntity<List<OrdenTrabajoResponseDTO>> listarPorVehiculo(@PathVariable @Pattern(regexp = "^[A-Za-z0-9-]{1,20}$") String patente) {
+    public ResponseEntity<List<OrdenTrabajoResponseDTO>> listarPorVehiculo(
+            @PathVariable @Pattern(regexp = "^[A-Za-z0-9-]{1,20}$") String patente) {
         return ResponseEntity.ok(ordenService.listarPorVehiculo(patente));
     }
 
     @PatchMapping("/{id}/estado")
     @PreAuthorize("hasRole('ADMIN') or (hasRole('MECANICO') and @tallerAuthorization.esOrdenAsignadaAlMecanico(authentication, #id))")
     public ResponseEntity<OrdenTrabajoResponseDTO> cambiarEstado(
-            @PathVariable @Positive Integer id, @RequestParam EstadoOrden estado) {
+            @PathVariable @Positive Integer id,
+            @RequestParam @NotNull EstadoOrden estado) {
         return ResponseEntity.ok(ordenService.cambiarEstado(id, estado));
     }
 
-    /** Mecánico envía presupuesto → notifica al cliente, orden pasa a PENDIENTE_APROBACION */
     @PatchMapping("/{id}/presupuesto")
     @PreAuthorize("hasRole('ADMIN') or (hasRole('MECANICO') and @tallerAuthorization.esOrdenAsignadaAlMecanico(authentication, #id))")
     public ResponseEntity<OrdenTrabajoResponseDTO> enviarPresupuesto(
-            @PathVariable @Positive Integer id, @Valid @RequestBody PresupuestoRequestDTO request) {
+            @PathVariable @Positive Integer id,
+            @Valid @RequestBody PresupuestoRequestDTO request) {
         return ResponseEntity.ok(ordenService.enviarPresupuesto(id, request));
     }
 
-    /** Cliente aprueba el presupuesto → orden pasa a EN_PROGRESO */
     @PatchMapping("/{id}/aprobar-presupuesto")
     @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and @tallerAuthorization.esOrdenDelCliente(authentication, #id))")
     public ResponseEntity<OrdenTrabajoResponseDTO> aprobarPresupuesto(@PathVariable @Positive Integer id) {
         return ResponseEntity.ok(ordenService.aprobarPresupuesto(id));
     }
 
-    /** Cliente rechaza el presupuesto → orden vuelve a PENDIENTE */
     @PatchMapping("/{id}/rechazar-presupuesto")
     @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and @tallerAuthorization.esOrdenDelCliente(authentication, #id))")
     public ResponseEntity<OrdenTrabajoResponseDTO> rechazarPresupuesto(@PathVariable @Positive Integer id) {
         return ResponseEntity.ok(ordenService.rechazarPresupuesto(id));
     }
 
-    /** Mecánico marca la orden como completada → notifica al cliente y genera factura */
     @PatchMapping("/{id}/completar")
     @PreAuthorize("hasRole('ADMIN') or (hasRole('MECANICO') and @tallerAuthorization.esOrdenAsignadaAlMecanico(authentication, #id))")
     public ResponseEntity<OrdenTrabajoResponseDTO> marcarCompletada(@PathVariable @Positive Integer id) {

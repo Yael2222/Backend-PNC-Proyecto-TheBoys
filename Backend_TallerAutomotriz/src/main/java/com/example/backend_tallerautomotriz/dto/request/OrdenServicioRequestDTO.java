@@ -6,6 +6,12 @@ import java.math.BigDecimal;
 
 @Data @NoArgsConstructor @AllArgsConstructor
 public class OrdenServicioRequestDTO {
-    @NotNull                    private Integer servicioId;
-    @NotNull @DecimalMin("0.0") private BigDecimal precioAplicado;
+    @NotNull
+    @Positive
+    private Integer servicioId;
+
+    @NotNull
+    @DecimalMin("0.0")
+    @Digits(integer = 10, fraction = 2)
+    private BigDecimal precioAplicado;
 }

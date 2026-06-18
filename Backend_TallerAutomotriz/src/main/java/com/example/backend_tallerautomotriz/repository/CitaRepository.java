@@ -18,11 +18,15 @@ public interface CitaRepository extends JpaRepository<Cita, Integer> {
     List<Cita> findByClienteIdOrderByFechaDescHoraDesc(Integer clienteId);
 
     List<Cita> findBySucursalIdAndFechaOrderByHoraAsc(Integer sucursalId, LocalDate fecha);
-    boolean existsBySucursalId(Integer sucursalId);
 
     List<Cita> findByMecanicoIdOrderByFechaDescHoraDesc(Integer mecanicoId);
+    boolean existsBySucursalId(Integer sucursalId);
 
     List<Cita> findByMecanicoIsNullAndEstadoOrderByFechaAscHoraAsc(EstadoCita estado);
+
+    List<Cita> findBySucursalIdAndMecanicoIsNullAndEstadoOrderByFechaAscHoraAsc(
+            Integer sucursalId,
+            EstadoCita estado);
 
     boolean existsByIdAndClienteUsuarioEmailIgnoreCase(Integer id, String email);
 

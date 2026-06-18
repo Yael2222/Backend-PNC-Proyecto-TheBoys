@@ -94,7 +94,18 @@ public class CitaServiceImpl implements CitaService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<CitaResponseDTO> listarPendientes() {
+    public List<CitaResponseDTO> listarPendientes(Integer sucursalId) {
+        if (sucursalId != null) {
+            if (!sucursalRepo.existsById(sucursalId)) {
+                throw new EntityNotFoundException("Sucursal no encontrada: " + sucursalId);
+            }
+            return citaRepo.findBySucursalIdAndMecanicoIsNullAndEstadoOrderByFechaAscHoraAsc(
+                            sucursalId,
+                            EstadoCita.PROGRAMADA)
+                    .stream()
+                    .map(this::toDTO)
+                    .toList();
+        }
         return citaRepo.findByMecanicoIsNullAndEstadoOrderByFechaAscHoraAsc(EstadoCita.PROGRAMADA)
                 .stream()
                 .map(this::toDTO)

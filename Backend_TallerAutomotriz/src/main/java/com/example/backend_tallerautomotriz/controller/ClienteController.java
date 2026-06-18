@@ -26,27 +26,30 @@ public class ClienteController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','MECANICO')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<ClienteResponseDTO>> listar() {
         return ResponseEntity.ok(clienteService.listarTodos());
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','MECANICO') or (hasRole('CLIENTE') and @tallerAuthorization.esClientePropietario(authentication, #id))")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and @tallerAuthorization.esClientePropietario(authentication, #id))")
     public ResponseEntity<ClienteResponseDTO> obtener(@PathVariable @Positive Integer id) {
         return ResponseEntity.ok(clienteService.obtenerPorId(id));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and @tallerAuthorization.esClientePropietario(authentication, #id))")
-    public ResponseEntity<ClienteResponseDTO> actualizar(@PathVariable @Positive Integer id, @Valid @RequestBody ClienteRequestDTO request) {
+    public ResponseEntity<ClienteResponseDTO> actualizar(
+            @PathVariable @Positive Integer id,
+            @Valid @RequestBody ClienteRequestDTO request) {
         return ResponseEntity.ok(clienteService.actualizar(id, request));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> eliminar(@PathVariable @Positive Integer id) {
-        clienteService.eliminar(id); return ResponseEntity.noContent().build();
+        clienteService.eliminar(id);
+        return ResponseEntity.noContent().build();
     }
 }
 

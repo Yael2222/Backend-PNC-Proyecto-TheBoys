@@ -19,7 +19,7 @@ public interface CitaService {
 
     List<CitaResponseDTO> listarPorSucursalYFecha(Integer sucursalId, LocalDate fecha);
 
-    List<CitaResponseDTO> listarPendientes();
+    List<CitaResponseDTO> listarPendientes(Integer sucursalId);
 
     CitaResponseDTO aceptar(Integer citaId, Integer mecanicoId);
 

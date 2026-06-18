@@ -22,26 +22,35 @@ public class ProveedorController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ProveedorResponseDTO> crear(@Valid @RequestBody ProveedorRequestDTO req) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(proveedorService.crear(req));
+    public ResponseEntity<ProveedorResponseDTO> crear(@Valid @RequestBody ProveedorRequestDTO request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(proveedorService.crear(request));
     }
+
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','MECANICO')")
-    public ResponseEntity<List<ProveedorResponseDTO>> listar() { return ResponseEntity.ok(proveedorService.listarTodos()); }
+    public ResponseEntity<List<ProveedorResponseDTO>> listar() {
+        return ResponseEntity.ok(proveedorService.listarTodos());
+    }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','MECANICO')")
-    public ResponseEntity<ProveedorResponseDTO> obtener(@PathVariable @Positive Integer id) { return ResponseEntity.ok(proveedorService.obtenerPorId(id)); }
+    public ResponseEntity<ProveedorResponseDTO> obtener(@PathVariable @Positive Integer id) {
+        return ResponseEntity.ok(proveedorService.obtenerPorId(id));
+    }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ProveedorResponseDTO> actualizar(@PathVariable @Positive Integer id, @Valid @RequestBody ProveedorRequestDTO req) {
-        return ResponseEntity.ok(proveedorService.actualizar(id, req));
+    public ResponseEntity<ProveedorResponseDTO> actualizar(
+            @PathVariable @Positive Integer id,
+            @Valid @RequestBody ProveedorRequestDTO request) {
+        return ResponseEntity.ok(proveedorService.actualizar(id, request));
     }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> eliminar(@PathVariable @Positive Integer id) {
-        proveedorService.eliminar(id); return ResponseEntity.noContent().build();
+        proveedorService.eliminar(id);
+        return ResponseEntity.noContent().build();
     }
 }
 

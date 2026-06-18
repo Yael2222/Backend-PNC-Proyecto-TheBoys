@@ -5,6 +5,11 @@ import lombok.*;
 
 @Data @NoArgsConstructor @AllArgsConstructor
 public class MecanicoRequestDTO {
-    @NotNull private Integer usuarioId;
-    @NotNull private Integer sucursalId;
+    @NotNull
+    @Positive
+    private Integer usuarioId;
+
+    @NotNull
+    @Positive
+    private Integer sucursalId;
 }

@@ -24,7 +24,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    @PreAuthorize("#request.rol == null or #request.rol.name() == 'CLIENTE' or hasRole('ADMIN')")
+    @PreAuthorize("#request.rol == T(com.example.backend_tallerautomotriz.enums.NombreRol).CLIENTE or hasRole('ADMIN')")
     public ResponseEntity<AuthResponseDTO> register(@Valid @RequestBody RegisterRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
     }

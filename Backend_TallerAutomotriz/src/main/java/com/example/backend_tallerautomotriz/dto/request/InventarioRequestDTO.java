@@ -5,7 +5,16 @@ import lombok.*;
 
 @Data @NoArgsConstructor @AllArgsConstructor
 public class InventarioRequestDTO {
-    @NotNull         private Integer sucursalId;
-    @NotNull         private Integer repuestoId;
-    @NotNull @Min(0) private Integer stockTotal;
+
+    @NotNull
+    @Positive
+    private Integer sucursalId;
+
+    @NotNull
+    @Positive
+    private Integer repuestoId;
+
+    @NotNull
+    @PositiveOrZero
+    private Integer stockTotal;
 }
