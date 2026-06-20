@@ -28,4 +28,7 @@ public class RegisterRequestDTO {
 
     @NotNull
     private NombreRol rol; // ADMIN | MECANICO | CLIENTE
+
+    @Size(max = 20)
+    private String telefono;
 }

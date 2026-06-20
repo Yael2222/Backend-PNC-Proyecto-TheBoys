@@ -37,6 +37,12 @@ public class MecanicoController {
         return ResponseEntity.ok(mecanicoService.obtenerPorId(id));
     }
 
+    @GetMapping("/usuario/{usuarioId}")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('MECANICO') and @tallerAuthorization.esUsuarioPropietario(authentication, #usuarioId))")
+    public ResponseEntity<MecanicoResponseDTO> obtenerPorUsuarioId(@PathVariable @Positive Integer usuarioId) {
+        return ResponseEntity.ok(mecanicoService.obtenerPorUsuarioId(usuarioId));
+    }
+
     @GetMapping("/sucursal/{sucursalId}")
     @PreAuthorize("hasRole('ADMIN') or (hasRole('MECANICO') and @tallerAuthorization.esSucursalDelMecanico(authentication, #sucursalId))")
     public ResponseEntity<List<MecanicoResponseDTO>> listarPorSucursal(@PathVariable @Positive Integer sucursalId) {

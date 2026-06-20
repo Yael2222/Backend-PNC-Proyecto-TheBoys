@@ -25,9 +25,28 @@ public class OrdenTrabajoController {
     private final OrdenTrabajoService ordenService;
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('MECANICO') and @tallerAuthorization.esMecanicoPropietario(authentication, #request.mecanicoId))")
+    @PreAuthorize("hasRole('ADMIN') " +
+            "or (hasRole('MECANICO') and @tallerAuthorization.esMecanicoPropietario(authentication, #request.mecanicoId)) " +
+            "or (hasRole('CLIENTE') and @tallerAuthorization.esClientePropietario(authentication, #request.clienteId))")
     public ResponseEntity<OrdenTrabajoResponseDTO> crear(@Valid @RequestBody OrdenTrabajoRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(ordenService.crear(request));
+    }
+
+    @GetMapping("/pendientes")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('MECANICO') and #sucursalId != null " +
+            "and @tallerAuthorization.esSucursalDelMecanico(authentication, #sucursalId))")
+    public ResponseEntity<List<OrdenTrabajoResponseDTO>> listarPendientes(
+            @RequestParam(required = false) @Positive Integer sucursalId) {
+        return ResponseEntity.ok(ordenService.listarPendientes(sucursalId));
+    }
+
+    @PatchMapping("/{id}/asignar-mecanico")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('MECANICO') " +
+            "and @tallerAuthorization.esMecanicoPropietario(authentication, #mecanicoId))")
+    public ResponseEntity<OrdenTrabajoResponseDTO> asignarMecanico(
+            @PathVariable @Positive Integer id,
+            @RequestParam @Positive Integer mecanicoId) {
+        return ResponseEntity.ok(ordenService.asignarMecanico(id, mecanicoId));
     }
 
     @GetMapping

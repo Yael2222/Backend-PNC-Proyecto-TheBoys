@@ -50,6 +50,15 @@ public class MecanicoServiceImpl implements MecanicoService {
 
     @Override
     @Transactional(readOnly = true)
+    public MecanicoResponseDTO obtenerPorUsuarioId(Integer usuarioId) {
+        Mecanico mecanico = repo.findByUsuarioId(usuarioId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "No existe perfil de mecanico para el usuario: " + usuarioId));
+        return toDTO(mecanico);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<MecanicoResponseDTO> listarTodos() {
         return repo.findAll().stream().map(this::toDTO).toList();
     }

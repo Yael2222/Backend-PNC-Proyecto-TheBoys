@@ -20,4 +20,8 @@ public interface FacturaRepository extends JpaRepository<Factura, Integer> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select f from Factura f where f.orden.id = :ordenId")
     Optional<Factura> findByOrdenIdForUpdate(@Param("ordenId") Integer ordenId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select f from Factura f where f.id = :id")
+    Optional<Factura> findByIdForUpdate(@Param("id") Integer id);
 }

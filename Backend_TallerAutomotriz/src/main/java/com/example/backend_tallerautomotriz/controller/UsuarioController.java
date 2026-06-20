@@ -11,6 +11,7 @@ import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -66,7 +67,6 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.cambiarRol(id, req));
     }
 
-    //Permite modificar el propio perfil para cualquier rol autenticado
     @GetMapping("/me")
     public ResponseEntity<UsuarioResponseDTO> obtenerPerfil(Authentication authentication) {
         return ResponseEntity.ok(usuarioService.obtenerPerfil(authentication.getName()));
@@ -87,4 +87,3 @@ public class UsuarioController {
         return ResponseEntity.noContent().build();
     }
 }
-

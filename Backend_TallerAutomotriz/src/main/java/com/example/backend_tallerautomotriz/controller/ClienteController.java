@@ -37,6 +37,12 @@ public class ClienteController {
         return ResponseEntity.ok(clienteService.obtenerPorId(id));
     }
 
+    @GetMapping("/usuario/{usuarioId}")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and @tallerAuthorization.esUsuarioPropietario(authentication, #usuarioId))")
+    public ResponseEntity<ClienteResponseDTO> obtenerPorUsuarioId(@PathVariable @Positive Integer usuarioId) {
+        return ResponseEntity.ok(clienteService.obtenerPorUsuarioId(usuarioId));
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and @tallerAuthorization.esClientePropietario(authentication, #id))")
     public ResponseEntity<ClienteResponseDTO> actualizar(
@@ -52,4 +58,3 @@ public class ClienteController {
         return ResponseEntity.noContent().build();
     }
 }
-
