@@ -16,6 +16,10 @@ public interface OrdenTrabajoService {
 
     List<OrdenTrabajoResponseDTO> listarPorVehiculo(String patente);
 
+    List<OrdenTrabajoResponseDTO> listarPendientes(Integer sucursalId);
+
+    OrdenTrabajoResponseDTO asignarMecanico(Integer ordenId, Integer mecanicoId);
+
     OrdenTrabajoResponseDTO cambiarEstado(Integer id, EstadoOrden estado);
 
     OrdenTrabajoResponseDTO enviarPresupuesto(Integer ordenId, PresupuestoRequestDTO request);

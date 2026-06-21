@@ -5,4 +5,5 @@ import com.example.backend_tallerautomotriz.dto.response.StripePaymentResponseDT
 
 public interface StripeService {
     StripePaymentResponseDTO procesarPago(StripePaymentRequestDTO request);
+    String getPublishableKey();
 }

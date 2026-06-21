@@ -8,6 +8,8 @@ import java.math.BigDecimal;
 public class FacturaResponseDTO {
     private Integer id;
     private Integer ordenId;
+    private String vehiculoPatente;
+    private java.time.LocalDate fechaOrden;
     private BigDecimal subtotal;
     private BigDecimal impuestos;
     private BigDecimal total;

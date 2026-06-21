@@ -3,6 +3,7 @@ package com.example.backend_tallerautomotriz.repository;
 import com.example.backend_tallerautomotriz.entity.RegistroHoras;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 
@@ -21,4 +22,10 @@ public interface RegistroHorasRepository extends JpaRepository<RegistroHoras, In
 
     @Query("SELECT COALESCE(SUM(r.horasInvertidas), 0) FROM RegistroHoras r WHERE r.mecanico.id = :mecanicoId")
     java.math.BigDecimal sumHorasByMecanicoId(Integer mecanicoId);
+
+    @Query("SELECT COALESCE(SUM(r.horasInvertidas), 0) FROM RegistroHoras r " +
+            "WHERE r.mecanico.id = :mecanicoId AND r.fechaRegistro = :fecha")
+    java.math.BigDecimal sumHorasByMecanicoIdAndFecha(
+            @Param("mecanicoId") Integer mecanicoId,
+            @Param("fecha") java.time.LocalDate fecha);
 }

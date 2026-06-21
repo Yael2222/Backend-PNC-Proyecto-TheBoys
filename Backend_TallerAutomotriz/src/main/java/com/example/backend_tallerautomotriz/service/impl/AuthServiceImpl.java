@@ -3,11 +3,15 @@ package com.example.backend_tallerautomotriz.service.impl;
 import com.example.backend_tallerautomotriz.dto.request.LoginRequestDTO;
 import com.example.backend_tallerautomotriz.dto.request.RegisterRequestDTO;
 import com.example.backend_tallerautomotriz.dto.response.AuthResponseDTO;
+import com.example.backend_tallerautomotriz.entity.Cliente;
 import com.example.backend_tallerautomotriz.entity.Rol;
 import com.example.backend_tallerautomotriz.entity.Usuario;
+import com.example.backend_tallerautomotriz.enums.NombreRol;
+import com.example.backend_tallerautomotriz.exception.BusinessRuleException;
 import com.example.backend_tallerautomotriz.exception.DuplicateResourceException;
 import com.example.backend_tallerautomotriz.exception.EntityNotFoundException;
 import com.example.backend_tallerautomotriz.exception.UnauthorizedException;
+import com.example.backend_tallerautomotriz.repository.ClienteRepository;
 import com.example.backend_tallerautomotriz.repository.RolRepository;
 import com.example.backend_tallerautomotriz.repository.UsuarioRepository;
 import com.example.backend_tallerautomotriz.security.JwtTokenProvider;
@@ -17,6 +21,7 @@ import org.springframework.security.authentication.*;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Locale;
 
@@ -26,6 +31,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final UsuarioRepository usuarioRepo;
     private final RolRepository rolRepo;
+    private final ClienteRepository clienteRepo;
     private final JwtTokenProvider jwtProvider;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authManager;
@@ -59,12 +65,15 @@ public class AuthServiceImpl implements AuthService {
         String token = jwtProvider.generateToken(usuario.getEmail(), usuario.getRol().getNombre().name());
         return new AuthResponseDTO(
                 token,
+                usuario.getId(),
                 usuario.getEmail(),
                 usuario.getRol().getNombre().name(),
-                usuario.getNombre());
+                usuario.getNombre(),
+                usuario.getApellido());
     }
 
     @Override
+    @Transactional
     public AuthResponseDTO register(RegisterRequestDTO request) {
         String email = normalizarEmail(request.getEmail());
         if (usuarioRepo.existsByEmailIgnoreCase(email)) {
@@ -74,6 +83,11 @@ public class AuthServiceImpl implements AuthService {
         Rol rol = rolRepo.findByNombre(request.getRol())
                 .orElseThrow(() -> new EntityNotFoundException("Rol no encontrado: " + request.getRol()));
 
+        if (rol.getNombre() == NombreRol.CLIENTE
+                && (request.getTelefono() == null || request.getTelefono().isBlank())) {
+            throw new BusinessRuleException("El teléfono es obligatorio para registrarse como cliente");
+        }
+
         Usuario usuario = new Usuario();
         usuario.setEmail(email);
         usuario.setPassword(passwordEncoder.encode(request.getPassword()));
@@ -82,8 +96,19 @@ public class AuthServiceImpl implements AuthService {
         usuario.setRol(rol);
         usuarioRepo.save(usuario);
 
+        if (rol.getNombre() == NombreRol.CLIENTE) {
+            Cliente cliente = new Cliente(null, usuario, request.getTelefono().trim());
+            clienteRepo.save(cliente);
+        }
+
         String token = jwtProvider.generateToken(usuario.getEmail(), rol.getNombre().name());
-        return new AuthResponseDTO(token, usuario.getEmail(), rol.getNombre().name(), usuario.getNombre());
+        return new AuthResponseDTO(
+                token,
+                usuario.getId(),
+                usuario.getEmail(),
+                rol.getNombre().name(),
+                usuario.getNombre(),
+                usuario.getApellido());
     }
 
     private String normalizarEmail(String email) {

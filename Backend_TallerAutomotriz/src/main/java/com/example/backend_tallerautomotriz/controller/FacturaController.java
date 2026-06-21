@@ -38,6 +38,12 @@ public class FacturaController {
         return ResponseEntity.ok(facturaService.obtenerPorOrden(ordenId));
     }
 
+    @GetMapping("/cliente/{clienteId}")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and @tallerAuthorization.esClientePropietario(authentication, #clienteId))")
+    public ResponseEntity<List<FacturaResponseDTO>> listarPorCliente(@PathVariable @Positive Integer clienteId) {
+        return ResponseEntity.ok(facturaService.listarPorCliente(clienteId));
+    }
+
     @PostMapping("/pagar")
     @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and @tallerAuthorization.esFacturaDeOrdenDelCliente(authentication, #request.ordenId))")
     public ResponseEntity<FacturaResponseDTO> procesarPago(@Valid @RequestBody FacturaRequestDTO request) {

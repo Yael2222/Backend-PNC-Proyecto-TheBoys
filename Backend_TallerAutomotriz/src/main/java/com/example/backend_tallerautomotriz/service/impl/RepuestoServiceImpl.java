@@ -32,7 +32,13 @@ public class RepuestoServiceImpl implements RepuestoService {
     @Transactional
     public RepuestoResponseDTO crear(RepuestoRequestDTO req) {
         Proveedor p = proveedorRepo.findById(req.getProveedorId())
-                .orElseThrow(() -> new EntityNotFoundException("Proveedor no encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Proveedor no encontrado: " + req.getProveedorId()));
+
+        if (repo.existsByNombreIgnoreCaseAndProveedorId(req.getNombre().trim(), req.getProveedorId())) {
+            throw new DuplicateResourceException(
+                    "Este proveedor ya tiene registrado un repuesto con el nombre: " + req.getNombre());
+        }
+
         CategoriaRepuesto cat = parsearCategoria(req.getCategoria());
         Repuesto r = new Repuesto(null, p, req.getNombre(), req.getPrecioUnitario(), cat, req.getDescripcion());
         return toDTO(repo.save(r));

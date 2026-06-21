@@ -108,6 +108,52 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<OrdenTrabajoResponseDTO> listarPendientes(Integer sucursalId) {
+        if (sucursalId != null) {
+            if (!sucursalRepo.existsById(sucursalId)) {
+                throw new EntityNotFoundException("Sucursal no encontrada: " + sucursalId);
+            }
+            return ordenRepo.findBySucursalIdAndMecanicoIsNullAndEstadoOrderByFechaCreacionAsc(
+                            sucursalId, EstadoOrden.PENDIENTE)
+                    .stream().map(this::toDTO).toList();
+        }
+        return ordenRepo.findByMecanicoIsNullAndEstadoOrderByFechaCreacionAsc(EstadoOrden.PENDIENTE)
+                .stream().map(this::toDTO).toList();
+    }
+
+    @Override
+    @Transactional
+    public OrdenTrabajoResponseDTO asignarMecanico(Integer ordenId, Integer mecanicoId) {
+        OrdenTrabajo orden = buscarParaActualizar(ordenId);
+        if (orden.getMecanico() != null) {
+            throw new BusinessRuleException("La orden ya tiene un mecanico asignado");
+        }
+        if (orden.getEstado() != EstadoOrden.PENDIENTE) {
+            throw new BusinessRuleException("Solo se pueden reclamar ordenes pendientes");
+        }
+
+        Mecanico mecanico = mecanicoRepo.findByIdForUpdate(mecanicoId)
+                .orElseThrow(() -> new EntityNotFoundException("Mecanico no encontrado: " + mecanicoId));
+
+        if (orden.getSucursal() != null && !mecanico.getSucursal().getId().equals(orden.getSucursal().getId())) {
+            throw new BusinessRuleException("El mecanico no pertenece a la sucursal de la orden");
+        }
+
+        orden.setMecanico(mecanico);
+        if (orden.getSucursal() == null) {
+            orden.setSucursal(mecanico.getSucursal());
+        }
+        OrdenTrabajo guardada = ordenRepo.save(orden);
+        notificar(
+                orden.getCliente().getUsuario().getId(),
+                "Un mecanico fue asignado a tu orden #" + ordenId,
+                "ORDEN_MECANICO_ASIGNADO",
+                ordenId);
+        return toDTO(guardada);
+    }
+
+    @Override
     @Transactional
     public OrdenTrabajoResponseDTO cambiarEstado(Integer id, EstadoOrden estado) {
         if (estado != EstadoOrden.CANCELADA) {

@@ -41,6 +41,12 @@ public class FacturaServiceImpl implements FacturaService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<FacturaResponseDTO> listarPorCliente(Integer clienteId) {
+        return repo.findByOrdenClienteIdOrderByIdDesc(clienteId).stream().map(this::toDTO).toList();
+    }
+
+    @Override
     @Transactional
     public FacturaResponseDTO procesarPago(FacturaRequestDTO req) {
         if (req.getMetodoPago() == MetodoPago.STRIPE) {
@@ -61,6 +67,8 @@ public class FacturaServiceImpl implements FacturaService {
         return new FacturaResponseDTO(
                 factura.getId(),
                 factura.getOrden().getId(),
+                factura.getOrden().getVehiculo().getPatente(),
+                factura.getOrden().getFechaCreacion(),
                 factura.getSubtotal(),
                 factura.getImpuestos(),
                 factura.getTotal(),

@@ -13,6 +13,8 @@ import java.util.Optional;
 public interface FacturaRepository extends JpaRepository<Factura, Integer> {
     Optional<Factura> findByOrdenId(Integer ordenId);
 
+    java.util.List<Factura> findByOrdenClienteIdOrderByIdDesc(Integer clienteId);
+
     boolean existsByIdAndOrdenClienteUsuarioEmailIgnoreCase(Integer id, String email);
 
     boolean existsByOrdenIdAndOrdenClienteUsuarioEmailIgnoreCase(Integer ordenId, String email);
@@ -20,4 +22,8 @@ public interface FacturaRepository extends JpaRepository<Factura, Integer> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select f from Factura f where f.orden.id = :ordenId")
     Optional<Factura> findByOrdenIdForUpdate(@Param("ordenId") Integer ordenId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select f from Factura f where f.id = :id")
+    Optional<Factura> findByIdForUpdate(@Param("id") Integer id);
 }

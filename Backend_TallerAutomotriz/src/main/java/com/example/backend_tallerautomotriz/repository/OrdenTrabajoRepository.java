@@ -40,10 +40,15 @@ public interface OrdenTrabajoRepository extends JpaRepository<OrdenTrabajo, Inte
     List<OrdenTrabajo> findByClienteId(Integer clienteId);
 
     List<OrdenTrabajo> findByMecanicoId(Integer mecanicoId);
-    
+
     List<OrdenTrabajo> findByVehiculoPatente(String patente);
 
     List<OrdenTrabajo> findBySucursalId(Integer sucursalId);
+
+    List<OrdenTrabajo> findBySucursalIdAndMecanicoIsNullAndEstadoOrderByFechaCreacionAsc(
+            Integer sucursalId, EstadoOrden estado);
+
+    List<OrdenTrabajo> findByMecanicoIsNullAndEstadoOrderByFechaCreacionAsc(EstadoOrden estado);
 
     List<OrdenTrabajo> findByClienteIdAndEstado(Integer clienteId, EstadoOrden estado);
 

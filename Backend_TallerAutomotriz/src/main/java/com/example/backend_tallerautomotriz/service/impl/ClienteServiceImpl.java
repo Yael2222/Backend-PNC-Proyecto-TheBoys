@@ -42,6 +42,15 @@ public class ClienteServiceImpl implements ClienteService {
 
     @Override
     @Transactional(readOnly = true)
+    public ClienteResponseDTO obtenerPorUsuarioId(Integer usuarioId) {
+        Cliente cliente = repo.findByUsuarioId(usuarioId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "No existe perfil de cliente para el usuario: " + usuarioId));
+        return toDTO(cliente);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<ClienteResponseDTO> listarTodos() {
         return repo.findAll().stream().map(this::toDTO).toList();
     }
