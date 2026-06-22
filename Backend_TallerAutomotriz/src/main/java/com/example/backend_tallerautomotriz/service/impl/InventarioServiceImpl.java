@@ -15,35 +15,70 @@ import com.example.backend_tallerautomotriz.repository.SucursalRepository;
 import com.example.backend_tallerautomotriz.service.InventarioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Service @RequiredArgsConstructor
 public class InventarioServiceImpl implements InventarioService {
-
     private final InventarioRepository repo;
     private final SucursalRepository sucursalRepo;
     private final RepuestoRepository repuestoRepo;
 
     @Override
+    @Transactional
     public InventarioResponseDTO crear(InventarioRequestDTO req) {
-        Sucursal s = sucursalRepo.findById(req.getSucursalId())
+        Sucursal sucursal = sucursalRepo.findById(req.getSucursalId())
                 .orElseThrow(() -> new EntityNotFoundException("Sucursal no encontrada"));
-        Repuesto r = repuestoRepo.findById(req.getRepuestoId())
+        Repuesto repuesto = repuestoRepo.findById(req.getRepuestoId())
                 .orElseThrow(() -> new EntityNotFoundException("Repuesto no encontrado"));
-        if (repo.findBySucursalIdAndRepuestoId(req.getSucursalId(), req.getRepuestoId()).isPresent())
+        if (repo.findBySucursalIdAndRepuestoId(req.getSucursalId(), req.getRepuestoId()).isPresent()) {
             throw new DuplicateResourceException("Ya existe inventario para este repuesto en esta sucursal");
-        Inventario inv = new Inventario(null, s, r, req.getStockTotal(), LocalDate.now());
-        return toDTO(repo.save(inv));
+        }
+        Inventario inventario = new Inventario(null, sucursal, repuesto, req.getStockTotal(), LocalDate.now());
+        return toDTO(repo.save(inventario));
     }
 
     @Override
-    public InventarioResponseDTO obtenerPorId(Integer id) { return toDTO(buscar(id)); }
+    @Transactional(readOnly = true)
+    public InventarioResponseDTO obtenerPorId(Integer id) {
+        return toDTO(buscar(id));
+    }
 
     @Override
+    @Transactional(readOnly = true)
     public List<InventarioResponseDTO> listarPorSucursal(Integer sucursalId) {
-        return repo.findBySucursalId(sucursalId).stream().map(this::toDTO).collect(Collectors.toList());
+        if (!sucursalRepo.existsById(sucursalId)) {
+            throw new EntityNotFoundException("Sucursal no encontrada: " + sucursalId);
+        }
+        return repo.findBySucursalId(sucursalId).stream().map(this::toDTO).toList();
+    }
+
+    @Override
+    @Transactional
+    public InventarioResponseDTO actualizar(Integer id, InventarioRequestDTO req) {
+        Inventario inventario = repo.findByIdForUpdate(id)
+                .orElseThrow(() -> new EntityNotFoundException("Inventario no encontrado: " + id));
+        if (!inventario.getSucursal().getId().equals(req.getSucursalId())
+                || !inventario.getRepuesto().getId().equals(req.getRepuestoId())) {
+            throw new BusinessRuleException("No se puede cambiar la sucursal o repuesto de un inventario");
+        }
+        inventario.setStockTotal(req.getStockTotal());
+        inventario.setFechaActualizacion(LocalDate.now());
+        return toDTO(repo.save(inventario));
+    }
+
+    @Override
+    @Transactional
+    public void eliminar(Integer id) {
+        repo.delete(buscar(id));
+    }
+
+    private Inventario buscar(Integer id) {
+        return repo.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Inventario no encontrado: " + id));
     }
 
     @Override
@@ -65,27 +100,15 @@ public class InventarioServiceImpl implements InventarioService {
         return resultado.stream().map(this::toDTO).collect(Collectors.toList());
     }
 
-    @Override
-    public InventarioResponseDTO actualizar(Integer id, InventarioRequestDTO req) {
-        Inventario inv = buscar(id);
-        inv.setStockTotal(req.getStockTotal());
-        inv.setFechaActualizacion(LocalDate.now());
-        return toDTO(repo.save(inv));
-    }
-
-    @Override
-    public void eliminar(Integer id) { buscar(id); repo.deleteById(id); }
-
     private CategoriaRepuesto parsearCategoria(String cat) {
+        if (cat == null || cat.isBlank()) {
+            throw new BusinessRuleException("Categoria obligatoria");
+        }
         try {
-            return CategoriaRepuesto.valueOf(cat.toUpperCase());
+            return CategoriaRepuesto.valueOf(cat.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             throw new BusinessRuleException("Categoría inválida: " + cat);
         }
-    }
-
-    private Inventario buscar(Integer id) {
-        return repo.findById(id).orElseThrow(() -> new EntityNotFoundException("Inventario no encontrado: " + id));
     }
 
     private InventarioResponseDTO toDTO(Inventario i) {

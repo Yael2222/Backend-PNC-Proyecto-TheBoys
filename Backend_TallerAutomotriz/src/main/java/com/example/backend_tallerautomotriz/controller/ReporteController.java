@@ -2,15 +2,18 @@ package com.example.backend_tallerautomotriz.controller;
 
 import com.example.backend_tallerautomotriz.dto.response.MecanicoResponseDTO;
 import com.example.backend_tallerautomotriz.dto.response.OrdenTrabajoResponseDTO;
+import com.example.backend_tallerautomotriz.exception.BusinessRuleException;
 import com.example.backend_tallerautomotriz.repository.OrdenTrabajoRepository;
 import com.example.backend_tallerautomotriz.repository.RegistroHorasRepository;
 import com.example.backend_tallerautomotriz.repository.RepuestoRepository;
 import com.example.backend_tallerautomotriz.service.MecanicoService;
 import com.example.backend_tallerautomotriz.service.OrdenTrabajoService;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.*;
@@ -20,6 +23,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/v1/reportes")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
+@Validated
 public class ReporteController {
 
     private final OrdenTrabajoRepository ordenRepo;
@@ -32,7 +36,11 @@ public class ReporteController {
     public ResponseEntity<List<OrdenTrabajoResponseDTO>> ordenesPorFecha(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
-            @RequestParam(required = false) Integer sucursalId) {
+            @RequestParam(required = false) @Positive Integer sucursalId) {
+
+        if (desde.isAfter(hasta)) {
+            throw new BusinessRuleException("La fecha desde no puede ser posterior a la fecha hasta");
+        }
 
         var ordenes = sucursalId != null
                 ? ordenRepo.findBySucursalIdAndFechaCreacionBetween(sucursalId, desde, hasta)

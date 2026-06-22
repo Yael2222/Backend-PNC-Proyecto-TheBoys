@@ -1,14 +1,14 @@
 package com.example.backend_tallerautomotriz.dto.request;
 
+import com.example.backend_tallerautomotriz.enums.NombreRol;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
 @Data @NoArgsConstructor @AllArgsConstructor
 public class CambiarRolRequestDTO {
 
-    @NotBlank(message = "El rol es obligatorio")
-    private String nuevoRol; // "CLIENTE", "MECANICO", "ADMIN"
+    @NotNull(message = "El rol es obligatorio")
+    private NombreRol nuevoRol;
 
     private Integer sucursalId;
 }
-

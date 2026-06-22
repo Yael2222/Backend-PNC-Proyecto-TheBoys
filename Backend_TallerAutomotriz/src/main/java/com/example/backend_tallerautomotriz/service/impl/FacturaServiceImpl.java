@@ -11,6 +11,8 @@ import com.example.backend_tallerautomotriz.repository.FacturaRepository;
 import com.example.backend_tallerautomotriz.service.FacturaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -18,28 +20,59 @@ import java.util.stream.Collectors;
 public class FacturaServiceImpl implements FacturaService {
     private final FacturaRepository repo;
 
-    @Override public FacturaResponseDTO obtenerPorOrden(Integer ordenId) {
+    @Override
+    @Transactional(readOnly = true)
+    public FacturaResponseDTO obtenerPorOrden(Integer ordenId) {
         return toDTO(repo.findByOrdenId(ordenId)
                 .orElseThrow(() -> new EntityNotFoundException("Factura no encontrada para orden: " + ordenId)));
     }
-    @Override public FacturaResponseDTO obtenerPorId(Integer id) {
-        return toDTO(repo.findById(id).orElseThrow(() -> new EntityNotFoundException("Factura no encontrada: " + id)));
+
+    @Override
+    @Transactional(readOnly = true)
+    public FacturaResponseDTO obtenerPorId(Integer id) {
+        return toDTO(repo.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Factura no encontrada: " + id)));
     }
-    @Override public List<FacturaResponseDTO> listarTodas() {
-        return repo.findAll().stream().map(this::toDTO).collect(Collectors.toList());
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FacturaResponseDTO> listarTodas() {
+        return repo.findAll().stream().map(this::toDTO).toList();
     }
-    @Override public FacturaResponseDTO procesarPago(FacturaRequestDTO req) {
-        Factura f = repo.findByOrdenId(req.getOrdenId())
-                .orElseThrow(() -> new EntityNotFoundException("Factura no encontrada para orden: " + req.getOrdenId()));
-        if (f.getEstadoPago() == EstadoPago.PAGADO)
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FacturaResponseDTO> listarPorCliente(Integer clienteId) {
+        return repo.findByOrdenClienteIdOrderByIdDesc(clienteId).stream().map(this::toDTO).toList();
+    }
+
+    @Override
+    @Transactional
+    public FacturaResponseDTO procesarPago(FacturaRequestDTO req) {
+        if (req.getMetodoPago() == MetodoPago.STRIPE) {
+            throw new BusinessRuleException("Los pagos Stripe deben procesarse en el endpoint de Stripe");
+        }
+        Factura factura = repo.findByOrdenIdForUpdate(req.getOrdenId())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Factura no encontrada para orden: " + req.getOrdenId()));
+        if (factura.getEstadoPago() == EstadoPago.PAGADO) {
             throw new BusinessRuleException("La factura ya fue pagada");
-        f.setMetodoPago(MetodoPago.valueOf(req.getMetodoPago().toUpperCase()));
-        f.setEstadoPago(EstadoPago.PAGADO);
-        return toDTO(repo.save(f));
+        }
+        factura.setMetodoPago(req.getMetodoPago());
+        factura.setEstadoPago(EstadoPago.PAGADO);
+        return toDTO(repo.save(factura));
     }
-    private FacturaResponseDTO toDTO(Factura f) {
-        return new FacturaResponseDTO(f.getId(), f.getOrden().getId(), f.getSubtotal(),
-                f.getImpuestos(), f.getTotal(), f.getEstadoPago().name(),
-                f.getMetodoPago() != null ? f.getMetodoPago().name() : null);
+
+    private FacturaResponseDTO toDTO(Factura factura) {
+        return new FacturaResponseDTO(
+                factura.getId(),
+                factura.getOrden().getId(),
+                factura.getOrden().getVehiculo().getPatente(),
+                factura.getOrden().getFechaCreacion(),
+                factura.getSubtotal(),
+                factura.getImpuestos(),
+                factura.getTotal(),
+                factura.getEstadoPago().name(),
+                factura.getMetodoPago() != null ? factura.getMetodoPago().name() : null);
     }
 }

@@ -49,7 +49,7 @@ public class OrdenTrabajo {
 
     private String comentarios;
 
-    @Column(name = "presupuesto_total", precision = 10, scale = 2)
+    @Column(name = "presupuesto_total", precision = 12, scale = 2)
     private BigDecimal presupuestoTotal;
 
     @OneToMany(mappedBy = "orden", cascade = CascadeType.ALL, orphanRemoval = true)

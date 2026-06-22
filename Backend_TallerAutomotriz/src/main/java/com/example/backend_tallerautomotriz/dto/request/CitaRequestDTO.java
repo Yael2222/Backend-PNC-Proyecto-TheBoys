@@ -9,20 +9,24 @@ import java.util.List;
 @Data @NoArgsConstructor @AllArgsConstructor
 public class CitaRequestDTO {
 
-    @NotNull(message = "El clienteId es obligatorio")
+    @NotNull
+    @Positive
     private Integer clienteId;
 
-    @NotNull(message = "El sucursalId es obligatorio")
+    @NotNull
+    @Positive
     private Integer sucursalId;
 
+    @Positive
     private Integer mecanicoId;
 
-    @NotNull(message = "La fecha es obligatoria")
-    @FutureOrPresent(message = "La fecha no puede ser en el pasado")
+    @NotNull
+    @FutureOrPresent
     private LocalDate fecha;
 
-    @NotNull(message = "La hora es obligatoria")
+    @NotNull
     private LocalTime hora;
 
-    private List<Integer> servicioIds;
+    @Size(max = 50)
+    private List<@Positive Integer> servicioIds;
 }

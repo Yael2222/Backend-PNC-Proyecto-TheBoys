@@ -8,6 +8,7 @@ import java.util.List;
 public interface ClienteService {
     ClienteResponseDTO crear(ClienteRequestDTO request);
     ClienteResponseDTO obtenerPorId(Integer id);
+    ClienteResponseDTO obtenerPorUsuarioId(Integer usuarioId);
     List<ClienteResponseDTO> listarTodos();
     ClienteResponseDTO actualizar(Integer id, ClienteRequestDTO request);
     void eliminar(Integer id);

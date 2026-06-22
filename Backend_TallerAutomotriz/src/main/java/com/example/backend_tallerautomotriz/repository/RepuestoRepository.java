@@ -9,6 +9,9 @@ import java.util.List;
 
 @Repository
 public interface RepuestoRepository extends JpaRepository<Repuesto, Integer> {
+    boolean existsByNombreIgnoreCaseAndProveedorId(String nombre, Integer proveedorId);
+    boolean existsByNombreIgnoreCaseAndProveedorIdAndIdNot(String nombre, Integer proveedorId, Integer id);
+
 
     List<Repuesto> findByCategoria(CategoriaRepuesto categoria);
 

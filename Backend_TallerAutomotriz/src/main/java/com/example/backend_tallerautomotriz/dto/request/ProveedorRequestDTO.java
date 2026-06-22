@@ -5,7 +5,15 @@ import lombok.*;
 
 @Data @NoArgsConstructor @AllArgsConstructor
 public class ProveedorRequestDTO {
-    @NotBlank private String nombre;
-    @NotBlank private String marca;
-    @NotBlank private String contacto;
+    @NotBlank
+    @Size(max = 150)
+    private String nombre;
+
+    @NotBlank
+    @Size(max = 100)
+    private String marca;
+
+    @NotBlank
+    @Size(max = 254)
+    private String contacto;
 }

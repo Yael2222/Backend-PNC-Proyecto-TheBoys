@@ -7,7 +7,10 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface SucursalRepository extends JpaRepository<Sucursal, Integer> {
+    boolean existsByNombreIgnoreCase(String nombre);
+    boolean existsByNombreIgnoreCaseAndIdNot(String nombre, Integer id);
 
     @Query("SELECT COUNT(m) > 0 FROM Mecanico m WHERE m.sucursal.id = :sucursalId")
     boolean tieneMecanicos(Integer sucursalId);
 }
+
