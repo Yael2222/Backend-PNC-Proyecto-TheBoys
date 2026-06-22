@@ -33,8 +33,7 @@ public class OrdenTrabajoController {
     }
 
     @GetMapping("/pendientes")
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('MECANICO') and #sucursalId != null " +
-            "and @tallerAuthorization.esSucursalDelMecanico(authentication, #sucursalId))")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MECANICO')")
     public ResponseEntity<List<OrdenTrabajoResponseDTO>> listarPendientes(
             @RequestParam(required = false) @Positive Integer sucursalId) {
         return ResponseEntity.ok(ordenService.listarPendientes(sucursalId));
