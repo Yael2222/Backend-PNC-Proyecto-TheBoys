@@ -5,22 +5,24 @@ import com.example.backend_tallerautomotriz.dto.response.VehiculoResponseDTO;
 import com.example.backend_tallerautomotriz.service.VehiculoService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
-@RestController @RequestMapping("/api/v1/vehiculos") @RequiredArgsConstructor
+@RestController @RequestMapping("/api/v1/vehiculos") @RequiredArgsConstructor @Validated
 public class VehiculoController {
 
     private final VehiculoService vehiculoService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'CLIENTE')")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and @tallerAuthorization.esClientePropietario(authentication, #req.clienteId))")
     public ResponseEntity<VehiculoResponseDTO> crear(@Valid @RequestBody VehiculoRequestDTO req) {
         return ResponseEntity.status(HttpStatus.CREATED).body(vehiculoService.crear(req));
     }
@@ -42,7 +44,7 @@ public class VehiculoController {
     @GetMapping("/cliente/{clienteId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MECANICO') " +
             "or (hasRole('CLIENTE') and @tallerAuthorization.esClientePropietario(authentication, #clienteId))")
-    public ResponseEntity<List<VehiculoResponseDTO>> listarPorCliente(@PathVariable Integer clienteId) {
+    public ResponseEntity<List<VehiculoResponseDTO>> listarPorCliente(@PathVariable @Positive Integer clienteId) {
         return ResponseEntity.ok(vehiculoService.listarPorCliente(clienteId));
     }
 

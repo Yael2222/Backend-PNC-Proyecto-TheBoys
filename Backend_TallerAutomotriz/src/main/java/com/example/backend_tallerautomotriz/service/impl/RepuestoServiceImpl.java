@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Service @RequiredArgsConstructor
@@ -117,8 +118,11 @@ public class RepuestoServiceImpl implements RepuestoService {
 
 
     private CategoriaRepuesto parsearCategoria(String cat) {
+        if (cat == null || cat.isBlank()) {
+            throw new BusinessRuleException("Categoria obligatoria");
+        }
         try {
-            return CategoriaRepuesto.valueOf(cat.toUpperCase());
+            return CategoriaRepuesto.valueOf(cat.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             throw new BusinessRuleException("Categoría inválida: " + cat);
         }

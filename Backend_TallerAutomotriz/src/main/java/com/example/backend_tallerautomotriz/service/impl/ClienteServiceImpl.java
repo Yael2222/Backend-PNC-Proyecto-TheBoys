@@ -30,7 +30,7 @@ public class ClienteServiceImpl implements ClienteService {
         if (repo.findByUsuarioId(usuario.getId()).isPresent()) {
             throw new DuplicateResourceException("El usuario ya tiene un perfil de cliente");
         }
-        Cliente cliente = new Cliente(null, usuario, req.getTelefono().trim());
+        Cliente cliente = new Cliente(null, usuario, req.getTelefono().trim(), normalizarDireccion(req.getDireccion()));
         return toDTO(repo.save(cliente));
     }
 
@@ -63,6 +63,7 @@ public class ClienteServiceImpl implements ClienteService {
             throw new BusinessRuleException("No se puede cambiar el usuario asociado al cliente");
         }
         cliente.setTelefono(req.getTelefono().trim());
+        cliente.setDireccion(normalizarDireccion(req.getDireccion()));
         return toDTO(repo.save(cliente));
     }
 
@@ -91,6 +92,11 @@ public class ClienteServiceImpl implements ClienteService {
                 cliente.getUsuario().getNombre(),
                 cliente.getUsuario().getApellido(),
                 cliente.getUsuario().getEmail(),
-                cliente.getTelefono());
+                cliente.getTelefono(),
+                cliente.getDireccion());
+    }
+
+    private String normalizarDireccion(String direccion) {
+        return direccion == null || direccion.isBlank() ? null : direccion.trim();
     }
 }

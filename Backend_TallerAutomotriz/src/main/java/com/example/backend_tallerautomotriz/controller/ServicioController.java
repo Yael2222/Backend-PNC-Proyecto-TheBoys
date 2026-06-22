@@ -5,13 +5,15 @@ import com.example.backend_tallerautomotriz.dto.request.ServicioRequestDTO;
 import com.example.backend_tallerautomotriz.dto.response.ServicioResponseDTO;
 import com.example.backend_tallerautomotriz.service.ServicioService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
-@RestController @RequestMapping("/api/v1/servicios") @RequiredArgsConstructor
+@RestController @RequestMapping("/api/v1/servicios") @RequiredArgsConstructor @Validated
 public class ServicioController {
 
     private final ServicioService servicioService;
@@ -34,27 +36,27 @@ public class ServicioController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ServicioResponseDTO> obtener(@PathVariable Integer id) {
+    public ResponseEntity<ServicioResponseDTO> obtener(@PathVariable @Positive Integer id) {
         return ResponseEntity.ok(servicioService.obtenerPorId(id));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ServicioResponseDTO> actualizar(
-            @PathVariable Integer id, @Valid @RequestBody ServicioRequestDTO req) {
+            @PathVariable @Positive Integer id, @Valid @RequestBody ServicioRequestDTO req) {
         return ResponseEntity.ok(servicioService.actualizar(id, req));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> desactivar(@PathVariable Integer id) {
+    public ResponseEntity<Void> desactivar(@PathVariable @Positive Integer id) {
         servicioService.desactivar(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/reactivar")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ServicioResponseDTO> reactivar(@PathVariable Integer id) {
+    public ResponseEntity<ServicioResponseDTO> reactivar(@PathVariable @Positive Integer id) {
         servicioService.reactivar(id);
         return ResponseEntity.ok(servicioService.obtenerPorId(id));
     }

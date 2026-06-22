@@ -10,4 +10,7 @@ public class AuthResponseDTO {
     private String rol;
     private String nombre;
     private String apellido;
+    private Integer clienteId;
+    private Integer mecanicoId;
+    private Integer sucursalId;
 }

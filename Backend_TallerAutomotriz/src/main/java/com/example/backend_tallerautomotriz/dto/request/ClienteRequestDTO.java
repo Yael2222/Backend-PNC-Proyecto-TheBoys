@@ -14,4 +14,7 @@ public class ClienteRequestDTO {
     @Size(max = 20)
     @Pattern(regexp = "^[0-9+() -]{7,20}$")
     private String telefono;
+
+    @Size(max = 255)
+    private String direccion;
 }

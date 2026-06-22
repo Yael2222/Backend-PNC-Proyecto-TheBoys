@@ -6,10 +6,14 @@ import com.example.backend_tallerautomotriz.dto.request.UsuarioUpdatePasswordDTO
 import com.example.backend_tallerautomotriz.dto.response.UsuarioResponseDTO;
 import com.example.backend_tallerautomotriz.service.UsuarioService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,6 +21,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/usuarios")
 @RequiredArgsConstructor
+@Validated
 public class UsuarioController {
     private final UsuarioService usuarioService;
 
@@ -28,34 +33,34 @@ public class UsuarioController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UsuarioResponseDTO> obtener(@PathVariable Integer id) {
+    public ResponseEntity<UsuarioResponseDTO> obtener(@PathVariable @Positive Integer id) {
         return ResponseEntity.ok(usuarioService.obtenerPorId(id));
     }
 
     @GetMapping("/buscar")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UsuarioResponseDTO> buscarPorEmail(@RequestParam String email) {
+    public ResponseEntity<UsuarioResponseDTO> buscarPorEmail(@RequestParam @NotBlank @Email String email) {
         return ResponseEntity.ok(usuarioService.buscarPorEmail(email));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UsuarioResponseDTO> actualizar(
-            @PathVariable Integer id,
+            @PathVariable @Positive Integer id,
             @Valid @RequestBody UsuarioRequestDTO req) {
         return ResponseEntity.ok(usuarioService.actualizar(id, req));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> eliminar(@PathVariable Integer id, Authentication authentication) {
+    public ResponseEntity<Void> eliminar(@PathVariable @Positive Integer id, Authentication authentication) {
         usuarioService.eliminar(id, authentication.getName());
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/desbloquear")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UsuarioResponseDTO> desbloquear(@PathVariable Integer id) {
+    public ResponseEntity<UsuarioResponseDTO> desbloquear(@PathVariable @Positive Integer id) {
         usuarioService.desbloquear(id);
         return ResponseEntity.ok(usuarioService.obtenerPorId(id));
     }
@@ -63,7 +68,7 @@ public class UsuarioController {
     @PatchMapping("/{id}/cambiar-rol")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UsuarioResponseDTO> cambiarRol(
-            @PathVariable Integer id, @Valid @RequestBody CambiarRolRequestDTO req) {
+            @PathVariable @Positive Integer id, @Valid @RequestBody CambiarRolRequestDTO req) {
         return ResponseEntity.ok(usuarioService.cambiarRol(id, req));
     }
 

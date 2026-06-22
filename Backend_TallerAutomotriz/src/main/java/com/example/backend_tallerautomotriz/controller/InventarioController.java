@@ -58,9 +58,9 @@ public class InventarioController {
      * categoria y nombre son opcionales.
      */
     @GetMapping("/sucursal/{sucursalId}/filtrar")
-    @PreAuthorize("hasAnyRole('ADMIN','MECANICO')")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('MECANICO') and @tallerAuthorization.esSucursalDelMecanico(authentication, #sucursalId))")
     public ResponseEntity<List<InventarioResponseDTO>> filtrar(
-            @PathVariable Integer sucursalId,
+            @PathVariable @Positive Integer sucursalId,
             @RequestParam(required = false) String categoria,
             @RequestParam(required = false) String nombre) {
         return ResponseEntity.ok(inventarioService.filtrar(sucursalId, categoria, nombre));
