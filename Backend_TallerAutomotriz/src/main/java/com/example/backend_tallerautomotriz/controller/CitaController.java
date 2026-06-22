@@ -59,7 +59,7 @@ public class CitaController {
 
     /** Citas sin mecánico asignado — el mecánico las ve para aceptarlas */
     @GetMapping("/pendientes")
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('MECANICO') and #sucursalId != null and @tallerAuthorization.esSucursalDelMecanico(authentication, #sucursalId))")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MECANICO')")
     public ResponseEntity<List<CitaResponseDTO>> listarPendientes(
             @RequestParam(required = false) @Positive Integer sucursalId) {
         return ResponseEntity.ok(citaService.listarPendientes(sucursalId));
