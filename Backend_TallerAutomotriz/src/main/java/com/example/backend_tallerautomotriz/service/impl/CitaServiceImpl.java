@@ -145,8 +145,12 @@ public class CitaServiceImpl implements CitaService {
         if (cita.getMecanico() == null) {
             throw new BusinessRuleException("La cita no tiene mecanico asignado");
         }
-        if (cita.getEstado() != EstadoCita.CONFIRMADA && cita.getEstado() != EstadoCita.PROGRAMADA) {
-            throw new BusinessRuleException("No se puede reprogramar una cita en estado " + cita.getEstado());
+        if (
+                cita.getEstado() != EstadoCita.CONFIRMADA &&
+                        cita.getEstado() != EstadoCita.PROGRAMADA &&
+                        cita.getEstado() != EstadoCita.REPROGRAMADA
+        ) {
+            throw new BusinessRuleException("Solo se pueden proponer nuevas fechas para citas programadas, confirmadas o reprogramadas.");
         }
 
         mecanicoRepo.findByIdForUpdate(cita.getMecanico().getId())
