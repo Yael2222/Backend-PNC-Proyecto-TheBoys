@@ -168,25 +168,44 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
     @Transactional
     public OrdenTrabajoResponseDTO enviarPresupuesto(Integer ordenId, PresupuestoRequestDTO request) {
         OrdenTrabajo orden = buscarParaActualizar(ordenId);
+
         if (orden.getEstado() != EstadoOrden.PENDIENTE) {
             throw new BusinessRuleException("Solo se puede enviar presupuesto a ordenes pendientes");
         }
+
         if (orden.getMecanico() == null) {
             throw new BusinessRuleException("La orden debe tener un mecanico asignado");
         }
 
+        validarElementosUnicosPresupuesto(request);
+
+        Sucursal sucursal = obtenerSucursalParaOrden(orden);
+
+        if (orden.getSucursal() == null && sucursal != null) {
+            orden.setSucursal(sucursal);
+        }
+
+        agregarServiciosAdicionales(orden, request.getServicios());
+        agregarRepuestosAdicionales(orden, sucursal, request.getRepuestos());
+
         orden.setPresupuestoTotal(request.getPresupuestoTotal().setScale(2, RoundingMode.HALF_UP));
         orden.setFechaFinalizacionEstimada(request.getFechaFinalizacionEstimada());
+
         if (request.getComentarios() != null) {
             orden.setComentarios(request.getComentarios().trim());
         }
+
         orden.setEstado(EstadoOrden.PENDIENTE_APROBACION);
+
         OrdenTrabajo guardada = ordenRepo.save(orden);
+
         notificar(
                 orden.getCliente().getUsuario().getId(),
                 "Se envio un presupuesto para la orden #" + ordenId + " por $" + orden.getPresupuestoTotal(),
                 "PRESUPUESTO",
-                ordenId);
+                ordenId
+        );
+
         return toDTO(guardada);
     }
 
@@ -280,41 +299,72 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
     private void agregarServicios(OrdenTrabajo orden, List<OrdenServicioRequestDTO> solicitudes) {
         for (OrdenServicioRequestDTO solicitud : solicitudes) {
             Servicio servicio = servicioRepo.findById(solicitud.getServicioId())
-                    .orElseThrow(() -> new EntityNotFoundException("Servicio no encontrado: " + solicitud.getServicioId()));
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            "Servicio no encontrado: " + solicitud.getServicioId()
+                    ));
+
             if (servicio.getEstado() != EstadoServicio.ACTIVO) {
                 throw new BusinessRuleException("El servicio no esta activo: " + servicio.getId());
             }
+
+            BigDecimal precioAplicado = solicitud.getPrecioAplicado() != null
+                    ? solicitud.getPrecioAplicado()
+                    : servicio.getPrecioBase();
+
             orden.getServicios().add(new OrdenServicio(
                     new OrdenServicioId(orden.getId(), servicio.getId()),
                     orden,
                     servicio,
-                    solicitud.getPrecioAplicado()));
+                    precioAplicado.setScale(2, RoundingMode.HALF_UP)
+            ));
         }
     }
+
 
     private void agregarRepuestos(OrdenTrabajo orden, Sucursal sucursal, List<OrdenRepuestoRequestDTO> solicitudes) {
         if (solicitudes == null) {
             return;
         }
+
         List<OrdenRepuestoRequestDTO> ordenadas = solicitudes.stream()
                 .sorted(Comparator.comparing(OrdenRepuestoRequestDTO::getRepuestoId))
                 .toList();
+
         for (OrdenRepuestoRequestDTO solicitud : ordenadas) {
-            Repuesto repuesto = repuestoRepo.findById(solicitud.getRepuestoId())
-                    .orElseThrow(() -> new EntityNotFoundException("Repuesto no encontrado: " + solicitud.getRepuestoId()));
-            Inventario inventario = buscarInventarioParaActualizar(sucursal.getId(), repuesto.getId());
-            if (inventario.getStockTotal() < solicitud.getCantidad()) {
-                throw new StockInsuficienteException("Stock insuficiente para repuesto id: " + repuesto.getId());
+            if (solicitud.getCantidad() == null || solicitud.getCantidad() <= 0) {
+                throw new BusinessRuleException(
+                        "La cantidad del repuesto debe ser mayor a cero: " + solicitud.getRepuestoId()
+                );
             }
+
+            Repuesto repuesto = repuestoRepo.findById(solicitud.getRepuestoId())
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            "Repuesto no encontrado: " + solicitud.getRepuestoId()
+                    ));
+
+            Inventario inventario = buscarInventarioParaActualizar(sucursal.getId(), repuesto.getId());
+
+            if (inventario.getStockTotal() < solicitud.getCantidad()) {
+                throw new StockInsuficienteException(
+                        "Stock insuficiente para repuesto id: " + repuesto.getId()
+                );
+            }
+
             inventario.setStockTotal(inventario.getStockTotal() - solicitud.getCantidad());
             inventario.setFechaActualizacion(LocalDate.now());
             inventarioRepo.save(inventario);
+
+            BigDecimal precioAplicado = solicitud.getPrecioAplicado() != null
+                    ? solicitud.getPrecioAplicado()
+                    : repuesto.getPrecioUnitario();
+
             orden.getRepuestos().add(new OrdenRepuesto(
                     new OrdenRepuestoId(orden.getId(), repuesto.getId()),
                     orden,
                     repuesto,
                     solicitud.getCantidad(),
-                    solicitud.getPrecioAplicado()));
+                    precioAplicado.setScale(2, RoundingMode.HALF_UP)
+            ));
         }
     }
 
@@ -451,4 +501,154 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
                 servicios,
                 repuestos);
     }
+
+    //Helpers
+    private void validarElementosUnicosPresupuesto(PresupuestoRequestDTO request) {
+        Set<Integer> servicios = new HashSet<>();
+
+        if (request.getServicios() != null) {
+            for (OrdenServicioRequestDTO servicio : request.getServicios()) {
+                if (!servicios.add(servicio.getServicioId())) {
+                    throw new BusinessRuleException("No se permiten servicios duplicados en el presupuesto");
+                }
+            }
+        }
+
+        Set<Integer> repuestos = new HashSet<>();
+
+        if (request.getRepuestos() != null) {
+            for (OrdenRepuestoRequestDTO repuesto : request.getRepuestos()) {
+                if (!repuestos.add(repuesto.getRepuestoId())) {
+                    throw new BusinessRuleException("No se permiten repuestos duplicados en el presupuesto");
+                }
+            }
+        }
+    }
+
+    private Sucursal obtenerSucursalParaOrden(OrdenTrabajo orden) {
+        if (orden.getSucursal() != null) {
+            return orden.getSucursal();
+        }
+
+        if (orden.getMecanico() != null && orden.getMecanico().getSucursal() != null) {
+            return orden.getMecanico().getSucursal();
+        }
+
+        return null;
+    }
+
+    private void agregarServiciosAdicionales(
+            OrdenTrabajo orden,
+            List<OrdenServicioRequestDTO> solicitudes
+    ) {
+        if (solicitudes == null || solicitudes.isEmpty()) {
+            return;
+        }
+
+        Set<Integer> serviciosExistentes = new HashSet<>();
+
+        for (OrdenServicio ordenServicio : orden.getServicios()) {
+            serviciosExistentes.add(ordenServicio.getServicio().getId());
+        }
+
+        for (OrdenServicioRequestDTO solicitud : solicitudes) {
+            if (serviciosExistentes.contains(solicitud.getServicioId())) {
+                throw new BusinessRuleException(
+                        "El servicio ya esta agregado a la orden: " + solicitud.getServicioId()
+                );
+            }
+
+            Servicio servicio = servicioRepo.findById(solicitud.getServicioId())
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            "Servicio no encontrado: " + solicitud.getServicioId()
+                    ));
+
+            if (servicio.getEstado() != EstadoServicio.ACTIVO) {
+                throw new BusinessRuleException("El servicio no esta activo: " + servicio.getId());
+            }
+
+            BigDecimal precioAplicado = solicitud.getPrecioAplicado() != null
+                    ? solicitud.getPrecioAplicado()
+                    : servicio.getPrecioBase();
+
+            orden.getServicios().add(new OrdenServicio(
+                    new OrdenServicioId(orden.getId(), servicio.getId()),
+                    orden,
+                    servicio,
+                    precioAplicado.setScale(2, RoundingMode.HALF_UP)
+            ));
+
+            serviciosExistentes.add(servicio.getId());
+        }
+    }
+
+    private void agregarRepuestosAdicionales(
+            OrdenTrabajo orden,
+            Sucursal sucursal,
+            List<OrdenRepuestoRequestDTO> solicitudes
+    ) {
+        if (solicitudes == null || solicitudes.isEmpty()) {
+            return;
+        }
+
+        if (sucursal == null) {
+            throw new BusinessRuleException("La orden no tiene una sucursal asociada para usar repuestos");
+        }
+
+        Set<Integer> repuestosExistentes = new HashSet<>();
+
+        for (OrdenRepuesto ordenRepuesto : orden.getRepuestos()) {
+            repuestosExistentes.add(ordenRepuesto.getRepuesto().getId());
+        }
+
+        List<OrdenRepuestoRequestDTO> ordenadas = solicitudes.stream()
+                .sorted(Comparator.comparing(OrdenRepuestoRequestDTO::getRepuestoId))
+                .toList();
+
+        for (OrdenRepuestoRequestDTO solicitud : ordenadas) {
+            if (repuestosExistentes.contains(solicitud.getRepuestoId())) {
+                throw new BusinessRuleException(
+                        "El repuesto ya esta agregado a la orden: " + solicitud.getRepuestoId()
+                );
+            }
+
+            if (solicitud.getCantidad() == null || solicitud.getCantidad() <= 0) {
+                throw new BusinessRuleException(
+                        "La cantidad del repuesto debe ser mayor a cero: " + solicitud.getRepuestoId()
+                );
+            }
+
+            Repuesto repuesto = repuestoRepo.findById(solicitud.getRepuestoId())
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            "Repuesto no encontrado: " + solicitud.getRepuestoId()
+                    ));
+
+            Inventario inventario = buscarInventarioParaActualizar(sucursal.getId(), repuesto.getId());
+
+            if (inventario.getStockTotal() < solicitud.getCantidad()) {
+                throw new StockInsuficienteException(
+                        "Stock insuficiente para repuesto id: " + repuesto.getId()
+                );
+            }
+
+            inventario.setStockTotal(inventario.getStockTotal() - solicitud.getCantidad());
+            inventario.setFechaActualizacion(LocalDate.now());
+            inventarioRepo.save(inventario);
+
+            BigDecimal precioAplicado = solicitud.getPrecioAplicado() != null
+                    ? solicitud.getPrecioAplicado()
+                    : repuesto.getPrecioUnitario();
+
+            orden.getRepuestos().add(new OrdenRepuesto(
+                    new OrdenRepuestoId(orden.getId(), repuesto.getId()),
+                    orden,
+                    repuesto,
+                    solicitud.getCantidad(),
+                    precioAplicado.setScale(2, RoundingMode.HALF_UP)
+            ));
+
+            repuestosExistentes.add(repuesto.getId());
+        }
+    }
+
 }
