@@ -21,8 +21,9 @@ public class VehiculoController {
 
     private final VehiculoService vehiculoService;
 
+
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and @tallerAuthorization.esClientePropietario(authentication, #req.clienteId))")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and @tallerAuthorization.esClientePropietario(authentication, #p0.clienteId))")
     public ResponseEntity<VehiculoResponseDTO> crear(@Valid @RequestBody VehiculoRequestDTO req) {
         return ResponseEntity.status(HttpStatus.CREATED).body(vehiculoService.crear(req));
     }
