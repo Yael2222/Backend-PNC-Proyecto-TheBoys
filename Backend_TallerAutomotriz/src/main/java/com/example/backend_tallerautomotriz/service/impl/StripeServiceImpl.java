@@ -15,6 +15,8 @@ import com.stripe.model.Charge;
 import com.stripe.param.ChargeCreateParams;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +28,8 @@ import java.math.RoundingMode;
 @RequiredArgsConstructor
 public class StripeServiceImpl implements StripeService {
 
+    private static final Logger log = LoggerFactory.getLogger(StripeServiceImpl.class);
+
     private final FacturaRepository facturaRepo;
 
     @Value("${stripe.api-key}")
@@ -36,7 +40,33 @@ public class StripeServiceImpl implements StripeService {
 
     @PostConstruct
     public void init() {
+        stripeKey = sanitize(stripeKey);
+        publishableKey = sanitize(publishableKey);
+
+        if (stripeKey.isEmpty() || publishableKey.isEmpty()) {
+            log.warn("[Stripe] Claves NO configuradas. Define STRIPE_SECRET_KEY (sk_...) y " +
+                    "STRIPE_PUBLISHABLE_KEY (pk_...). El pago en línea estará deshabilitado.");
+        } else {
+            if (!stripeKey.startsWith("sk_")) {
+                log.error("[Stripe] STRIPE_SECRET_KEY no parece una clave secreta (debe empezar con 'sk_'). " +
+                        "¿Invertiste las claves pública y secreta?");
+            }
+            if (!publishableKey.startsWith("pk_")) {
+                log.error("[Stripe] STRIPE_PUBLISHABLE_KEY no parece una clave pública (debe empezar con 'pk_'). " +
+                        "¿Invertiste las claves pública y secreta? El formulario de tarjeta no cargará en el frontend.");
+            }
+            if (stripeKey.startsWith("sk_") && publishableKey.startsWith("pk_")) {
+                String modo = stripeKey.startsWith("sk_test_") ? "TEST" : "LIVE";
+                log.info("[Stripe] Configuración cargada correctamente en modo {}.", modo);
+            }
+        }
+
         Stripe.apiKey = stripeKey;
+    }
+
+    private static String sanitize(String value) {
+        if (value == null) return "";
+        return value.trim().replaceAll("^['\"]|['\"]$", "");
     }
 
     @Override
