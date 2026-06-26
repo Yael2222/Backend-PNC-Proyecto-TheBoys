@@ -40,6 +40,7 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
     private final InventarioRepository inventarioRepo;
     private final FacturaRepository facturaRepo;
     private final SucursalRepository sucursalRepo;
+    private final RegistroHorasRepository registroHorasRepo;
     private final NotificacionService notificacionService;
 
     @Override
@@ -235,17 +236,26 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
     @Transactional
     public OrdenTrabajoResponseDTO marcarCompletada(Integer ordenId) {
         OrdenTrabajo orden = buscarParaActualizar(ordenId);
+
         if (orden.getEstado() != EstadoOrden.EN_PROGRESO) {
             throw new BusinessRuleException("Solo se pueden completar ordenes en progreso");
         }
+
         orden.setEstado(EstadoOrden.COMPLETADA);
+
+        registrarHorasAutomaticas(orden);
+
         generarFactura(orden);
+
         OrdenTrabajo guardada = ordenRepo.save(orden);
+
         notificar(
                 orden.getCliente().getUsuario().getId(),
-                "Tu vehiculo esta listo. La orden #" + ordenId + " fue completada",
+                "Tu vehículo está listo. La orden #" + ordenId + " fue completada y ya puedes revisar la factura.",
                 "ORDEN_LISTA",
-                ordenId);
+                ordenId
+        );
+
         return toDTO(guardada);
     }
 
@@ -650,5 +660,57 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
             repuestosExistentes.add(repuesto.getId());
         }
     }
+
+    //Helpers
+    private void registrarHorasAutomaticas(OrdenTrabajo orden) {
+        if (orden.getMecanico() == null) {
+            return;
+        }
+
+        boolean yaExisteRegistro = registroHorasRepo.existsByOrdenIdAndMecanicoId(
+                orden.getId(),
+                orden.getMecanico().getId()
+        );
+
+        if (yaExisteRegistro) {
+            return;
+        }
+
+        BigDecimal horas = calcularHorasEstimadas(orden);
+
+        RegistroHoras registro = new RegistroHoras();
+        registro.setOrden(orden);
+        registro.setMecanico(orden.getMecanico());
+        registro.setFechaRegistro(LocalDate.now());
+        registro.setHorasInvertidas(horas);
+
+        registroHorasRepo.save(registro);
+    }
+
+    private BigDecimal calcularHorasEstimadas(OrdenTrabajo orden) {
+        try {
+            int minutos = orden.getServicios().stream()
+                    .map(ordenServicio -> ordenServicio.getServicio().getTiempoEstimadoMinutos())
+                    .filter(Objects::nonNull)
+                    .reduce(0, Integer::sum);
+
+            if (minutos <= 0) {
+                return BigDecimal.valueOf(2).setScale(2, RoundingMode.HALF_UP);
+            }
+
+            BigDecimal horas = BigDecimal.valueOf(minutos)
+                    .divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
+
+            if (horas.compareTo(BigDecimal.ZERO) <= 0) {
+                return BigDecimal.valueOf(2).setScale(2, RoundingMode.HALF_UP);
+            }
+
+            return horas;
+        } catch (Exception ex) {
+            return BigDecimal.valueOf(2).setScale(2, RoundingMode.HALF_UP);
+        }
+    }
+
+
 
 }

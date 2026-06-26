@@ -28,4 +28,7 @@ public interface RegistroHorasRepository extends JpaRepository<RegistroHoras, In
     java.math.BigDecimal sumHorasByMecanicoIdAndFecha(
             @Param("mecanicoId") Integer mecanicoId,
             @Param("fecha") java.time.LocalDate fecha);
+
+    boolean existsByOrdenIdAndMecanicoId(Integer ordenId, Integer mecanicoId);
+
 }

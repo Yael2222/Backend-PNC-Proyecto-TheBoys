@@ -11,4 +11,6 @@ public interface FacturaService {
     List<FacturaResponseDTO> listarTodas();
     List<FacturaResponseDTO> listarPorCliente(Integer clienteId);
     FacturaResponseDTO procesarPago(FacturaRequestDTO request);
+    FacturaResponseDTO solicitarPagoEfectivo(Integer facturaId);
+    FacturaResponseDTO confirmarPagoEfectivo(Integer facturaId);
 }
