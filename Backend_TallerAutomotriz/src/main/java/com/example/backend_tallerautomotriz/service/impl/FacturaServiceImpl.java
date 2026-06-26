@@ -37,6 +37,34 @@ public class FacturaServiceImpl implements FacturaService {
         return toDTO(repo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Factura no encontrada: " + id)));
     }
+    @Override
+    @Transactional
+    public FacturaResponseDTO confirmarPagoSeguro(Integer facturaId) {
+        Factura factura = repo.findByIdForUpdate(facturaId)
+                .orElseThrow(() -> new EntityNotFoundException("Factura no encontrada: " + facturaId));
+
+        if (factura.getMetodoPago() != MetodoPago.SEGURO) {
+            throw new BusinessRuleException("Esta factura no es de tipo seguro");
+        }
+        if (factura.getEstadoPago() == EstadoPago.PAGADO) {
+            return toDTO(factura);
+        }
+        if (factura.getEstadoPago() != EstadoPago.PENDIENTE_CONFIRMACION) {
+            throw new BusinessRuleException("La factura no está pendiente de confirmación");
+        }
+
+        factura.setEstadoPago(EstadoPago.PAGADO);
+        Factura guardada = repo.save(factura);
+
+        notificacionService.crear(
+                factura.getOrden().getCliente().getUsuario().getId(),
+                "El mecánico confirmó el pago del seguro para la factura #" + factura.getId(),
+                "PAGO_SEGURO_CONFIRMADO",
+                factura.getId()
+        );
+
+        return toDTO(guardada);
+    }
 
     @Override
     @Transactional(readOnly = true)

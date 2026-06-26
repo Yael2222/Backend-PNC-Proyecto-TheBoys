@@ -1,6 +1,7 @@
 package com.example.backend_tallerautomotriz.entity;
 
 import com.example.backend_tallerautomotriz.enums.EstadoCita;
+import com.example.backend_tallerautomotriz.enums.TipoOrden;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
@@ -50,4 +51,12 @@ public class Cita {
 
     @Column(name = "nueva_hora_propuesta")
     private LocalTime nuevaHoraPropuesta;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_orden")
+    private TipoOrden tipoOrden = TipoOrden.ESTANDAR;
+
+    @ManyToOne
+    @JoinColumn(name = "factura_garantia_id")
+    private Factura facturaGarantia;
 }
