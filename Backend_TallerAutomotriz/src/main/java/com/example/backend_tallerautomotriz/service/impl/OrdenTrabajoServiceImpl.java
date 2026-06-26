@@ -8,10 +8,7 @@ import com.example.backend_tallerautomotriz.dto.response.OrdenRepuestoResponseDT
 import com.example.backend_tallerautomotriz.dto.response.OrdenServicioResponseDTO;
 import com.example.backend_tallerautomotriz.dto.response.OrdenTrabajoResponseDTO;
 import com.example.backend_tallerautomotriz.entity.*;
-import com.example.backend_tallerautomotriz.enums.EstadoOrden;
-import com.example.backend_tallerautomotriz.enums.EstadoPago;
-import com.example.backend_tallerautomotriz.enums.EstadoServicio;
-import com.example.backend_tallerautomotriz.enums.TipoOrden;
+import com.example.backend_tallerautomotriz.enums.*;
 import com.example.backend_tallerautomotriz.exception.BusinessRuleException;
 import com.example.backend_tallerautomotriz.exception.EntityNotFoundException;
 import com.example.backend_tallerautomotriz.exception.StockInsuficienteException;
@@ -428,18 +425,37 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
                 .map(OrdenServicio::getPrecioAplicado)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal subtotalRepuestos = orden.getRepuestos().stream()
-                .map(repuesto -> repuesto.getPrecioAplicado().multiply(BigDecimal.valueOf(repuesto.getCantidad())))
+                .map(r -> r.getPrecioAplicado().multiply(BigDecimal.valueOf(r.getCantidad())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         BigDecimal subtotal = subtotalServicios.add(subtotalRepuestos).setScale(2, RoundingMode.HALF_UP);
+
+        if (orden.getTipoOrden() == TipoOrden.EXPRESS) {
+            subtotal = subtotal.add(BigDecimal.TEN).setScale(2, RoundingMode.HALF_UP);
+        }
+
         BigDecimal impuestos = subtotal.multiply(BigDecimal.valueOf(0.13)).setScale(2, RoundingMode.HALF_UP);
-        facturaRepo.save(new Factura(
-                null,
-                orden,
-                subtotal,
-                impuestos,
-                subtotal.add(impuestos).setScale(2, RoundingMode.HALF_UP),
-                EstadoPago.PENDIENTE,
-                null));
+        BigDecimal total = subtotal.add(impuestos).setScale(2, RoundingMode.HALF_UP);
+
+        EstadoPago estadoPago = EstadoPago.PENDIENTE;
+        MetodoPago metodoPago = null;
+
+        if (orden.getTipoOrden() == TipoOrden.SEGURO) {
+            total = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+            subtotal = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+            impuestos = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+            estadoPago = EstadoPago.PENDIENTE_CONFIRMACION;
+            metodoPago = MetodoPago.SEGURO;
+        }
+
+        if (orden.getTipoOrden() == TipoOrden.GARANTIA) {
+            total = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+            subtotal = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+            impuestos = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+            estadoPago = EstadoPago.PAGADO;
+        }
+
+        facturaRepo.save(new Factura(null, orden, subtotal, impuestos, total, estadoPago, metodoPago));
     }
 
     private void notificarMecanico(OrdenTrabajo orden, String mensaje, String tipo) {

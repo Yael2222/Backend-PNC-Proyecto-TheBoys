@@ -5,7 +5,9 @@ import com.example.backend_tallerautomotriz.dto.request.ReprogramarCitaRequestDT
 import com.example.backend_tallerautomotriz.dto.response.CitaResponseDTO;
 import com.example.backend_tallerautomotriz.entity.*;
 import com.example.backend_tallerautomotriz.enums.EstadoCita;
+import com.example.backend_tallerautomotriz.enums.EstadoPago;
 import com.example.backend_tallerautomotriz.enums.EstadoServicio;
+import com.example.backend_tallerautomotriz.enums.TipoOrden;
 import com.example.backend_tallerautomotriz.exception.BusinessRuleException;
 import com.example.backend_tallerautomotriz.exception.EntityNotFoundException;
 import com.example.backend_tallerautomotriz.repository.*;
@@ -31,6 +33,7 @@ public class CitaServiceImpl implements CitaService {
     private final MecanicoRepository mecanicoRepo;
     private final ServicioRepository servicioRepo;
     private final NotificacionService notificacionService;
+    private final FacturaRepository facturaRepo;
 
     private static final LocalTime HORA_INICIO = LocalTime.of(9, 0);
     private static final LocalTime HORA_FIN    = LocalTime.of(19, 0);
@@ -39,6 +42,7 @@ public class CitaServiceImpl implements CitaService {
     @Transactional
     public CitaResponseDTO crear(CitaRequestDTO request) {
         validarTurno(request.getFecha(), request.getHora());
+
         Cliente cliente = clienteRepo.findById(request.getClienteId())
                 .orElseThrow(() -> new EntityNotFoundException("Cliente no encontrado"));
         Sucursal sucursal = sucursalRepo.findById(request.getSucursalId())
@@ -52,6 +56,29 @@ public class CitaServiceImpl implements CitaService {
             validarDisponibilidad(mecanico.getId(), request.getFecha(), request.getHora(), null);
         }
 
+        TipoOrden tipo = request.getTipoOrden() != null ? request.getTipoOrden() : TipoOrden.ESTANDAR;
+        Factura facturaGarantia = null;
+
+        if (tipo == TipoOrden.GARANTIA) {
+            if (request.getFacturaGarantiaId() == null) {
+                throw new BusinessRuleException("Debe seleccionar una factura para aplicar garantía");
+            }
+            Factura factura = facturaRepo.findById(request.getFacturaGarantiaId())
+                    .orElseThrow(() -> new EntityNotFoundException("Factura no encontrada: " + request.getFacturaGarantiaId()));
+
+            if (!factura.getOrden().getCliente().getId().equals(cliente.getId())) {
+                throw new BusinessRuleException("La factura no pertenece al cliente");
+            }
+            if (factura.getEstadoPago() != EstadoPago.PAGADO) {
+                throw new BusinessRuleException("La factura seleccionada no está pagada");
+            }
+            LocalDate fechaOrden = factura.getOrden().getFechaCreacion();
+            if (fechaOrden.isBefore(LocalDate.now().minusDays(30))) {
+                throw new BusinessRuleException("La garantía solo aplica para órdenes de los últimos 30 días");
+            }
+            facturaGarantia = factura;
+        }
+
         Cita cita = new Cita();
         cita.setCliente(cliente);
         cita.setSucursal(sucursal);
@@ -60,6 +87,8 @@ public class CitaServiceImpl implements CitaService {
         cita.setHora(request.getHora());
         cita.setEstado(EstadoCita.PROGRAMADA);
         cita.setServicios(buscarServicios(request.getServicioIds()));
+        cita.setTipoOrden(tipo);
+        cita.setFacturaGarantia(facturaGarantia);
         return toDTO(citaRepo.save(cita));
     }
 
@@ -326,7 +355,10 @@ public class CitaServiceImpl implements CitaService {
                 cita.getEstado().name(),
                 cita.getServicios().stream().map(Servicio::getNombre).toList(),
                 cita.getNuevaFechaPropuesta(),
-                cita.getNuevaHoraPropuesta());
+                cita.getNuevaHoraPropuesta(),
+                cita.getTipoOrden() != null ? cita.getTipoOrden().name() : TipoOrden.ESTANDAR.name(),
+                cita.getFacturaGarantia() != null ? cita.getFacturaGarantia().getId() : null
+        );
     }
 
     private void validarHorarioLaboral(LocalTime hora) {

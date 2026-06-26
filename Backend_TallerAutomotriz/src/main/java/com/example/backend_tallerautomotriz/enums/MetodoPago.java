@@ -1,4 +1,4 @@
 package com.example.backend_tallerautomotriz.enums;
 
-public enum MetodoPago { EFECTIVO, STRIPE }
+public enum MetodoPago { EFECTIVO, STRIPE, SEGURO }
 

@@ -20,4 +20,6 @@ public class CitaResponseDTO {
     private List<String> servicios;
     private LocalDate nuevaFechaPropuesta;
     private LocalTime nuevaHoraPropuesta;
+    private String tipoOrden;
+    private Integer facturaGarantiaId;
 }

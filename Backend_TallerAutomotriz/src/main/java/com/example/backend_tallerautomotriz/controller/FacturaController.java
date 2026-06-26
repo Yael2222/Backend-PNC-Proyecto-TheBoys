@@ -61,6 +61,11 @@ public class FacturaController {
     public ResponseEntity<FacturaResponseDTO> confirmarPagoEfectivo(@PathVariable @Positive Integer id) {
         return ResponseEntity.ok(facturaService.confirmarPagoEfectivo(id));
     }
+    @PatchMapping("/{id}/confirmar-pago-seguro")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MECANICO')")
+    public ResponseEntity<FacturaResponseDTO> confirmarPagoSeguro(@PathVariable @Positive Integer id) {
+        return ResponseEntity.ok(facturaService.confirmarPagoSeguro(id));
+    }
 
 
 

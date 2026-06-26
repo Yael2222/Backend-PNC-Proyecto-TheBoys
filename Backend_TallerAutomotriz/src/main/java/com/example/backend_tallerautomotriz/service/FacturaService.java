@@ -13,4 +13,5 @@ public interface FacturaService {
     FacturaResponseDTO procesarPago(FacturaRequestDTO request);
     FacturaResponseDTO solicitarPagoEfectivo(Integer facturaId);
     FacturaResponseDTO confirmarPagoEfectivo(Integer facturaId);
+    FacturaResponseDTO confirmarPagoSeguro(Integer facturaId);
 }
