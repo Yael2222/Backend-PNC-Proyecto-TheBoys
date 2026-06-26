@@ -49,4 +49,19 @@ public class FacturaController {
     public ResponseEntity<FacturaResponseDTO> procesarPago(@Valid @RequestBody FacturaRequestDTO request) {
         return ResponseEntity.ok(facturaService.procesarPago(request));
     }
+
+    @PatchMapping("/{id}/solicitar-pago-efectivo")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and @tallerAuthorization.esFacturaDelCliente(authentication, #id))")
+    public ResponseEntity<FacturaResponseDTO> solicitarPagoEfectivo(@PathVariable @Positive Integer id) {
+        return ResponseEntity.ok(facturaService.solicitarPagoEfectivo(id));
+    }
+
+    @PatchMapping("/{id}/confirmar-pago-efectivo")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MECANICO')")
+    public ResponseEntity<FacturaResponseDTO> confirmarPagoEfectivo(@PathVariable @Positive Integer id) {
+        return ResponseEntity.ok(facturaService.confirmarPagoEfectivo(id));
+    }
+
+
+
 }

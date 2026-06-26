@@ -84,6 +84,12 @@ public class StripeServiceImpl implements StripeService {
             throw new BusinessRuleException("La factura ya fue pagada");
         }
 
+        if (f.getEstadoPago() == EstadoPago.PENDIENTE_CONFIRMACION) {
+            throw new BusinessRuleException(
+                    "Esta factura tiene una solicitud de pago en efectivo pendiente de validación por el mecánico."
+            );
+        }
+
         long montoEnCentavos = f.getTotal()
                 .setScale(2, RoundingMode.HALF_UP)
                 .multiply(BigDecimal.valueOf(100))
