@@ -3,11 +3,14 @@ package com.example.backend_tallerautomotriz.service.impl;
 import com.example.backend_tallerautomotriz.dto.request.StripePaymentRequestDTO;
 import com.example.backend_tallerautomotriz.dto.response.StripePaymentResponseDTO;
 import com.example.backend_tallerautomotriz.entity.Factura;
+import com.example.backend_tallerautomotriz.entity.OrdenTrabajo;
+import com.example.backend_tallerautomotriz.enums.EstadoOrden;
 import com.example.backend_tallerautomotriz.enums.EstadoPago;
 import com.example.backend_tallerautomotriz.enums.MetodoPago;
 import com.example.backend_tallerautomotriz.exception.BusinessRuleException;
 import com.example.backend_tallerautomotriz.exception.EntityNotFoundException;
 import com.example.backend_tallerautomotriz.repository.FacturaRepository;
+import com.example.backend_tallerautomotriz.repository.OrdenTrabajoRepository;
 import com.example.backend_tallerautomotriz.service.StripeService;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
@@ -31,6 +34,7 @@ public class StripeServiceImpl implements StripeService {
     private static final Logger log = LoggerFactory.getLogger(StripeServiceImpl.class);
 
     private final FacturaRepository facturaRepo;
+    private final OrdenTrabajoRepository ordenRepo;
 
     @Value("${stripe.api-key}")
     private String stripeKey;
@@ -86,7 +90,7 @@ public class StripeServiceImpl implements StripeService {
 
         if (f.getEstadoPago() == EstadoPago.PENDIENTE_CONFIRMACION) {
             throw new BusinessRuleException(
-                    "Esta factura tiene una solicitud de pago en efectivo pendiente de validación por el mecánico."
+                    "Esta factura tiene una solicitud de pago pendiente de validación por el mecánico."
             );
         }
 
@@ -105,13 +109,18 @@ public class StripeServiceImpl implements StripeService {
                     .build();
             charge = Charge.create(params);
         } catch (StripeException e) {
-            // Error real de Stripe (tarjeta rechazada, token inválido, etc.)
             throw new BusinessRuleException("El pago fue rechazado por Stripe: " + e.getMessage());
         }
 
         f.setEstadoPago(EstadoPago.PAGADO);
         f.setMetodoPago(MetodoPago.STRIPE);
         facturaRepo.save(f);
+
+        OrdenTrabajo orden = f.getOrden();
+        if (orden.getEstado() == EstadoOrden.ESPERANDO_PAGO) {
+            orden.setEstado(EstadoOrden.COMPLETADA);
+            ordenRepo.save(orden);
+        }
 
         return new StripePaymentResponseDTO(charge.getId(), "EXITOSO", "Pago procesado correctamente");
     }

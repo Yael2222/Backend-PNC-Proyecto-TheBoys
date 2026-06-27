@@ -238,17 +238,16 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
             throw new BusinessRuleException("Solo se pueden completar ordenes en progreso");
         }
 
-        orden.setEstado(EstadoOrden.COMPLETADA);
+        orden.setEstado(EstadoOrden.ESPERANDO_PAGO);
 
         registrarHorasAutomaticas(orden);
-
         generarFactura(orden);
 
         OrdenTrabajo guardada = ordenRepo.save(orden);
 
         notificar(
                 orden.getCliente().getUsuario().getId(),
-                "Tu vehículo está listo. La orden #" + ordenId + " fue completada y ya puedes revisar la factura.",
+                "Tu vehículo está listo. La orden #" + ordenId + " fue completada. Por favor procede con el pago.",
                 "ORDEN_LISTA",
                 ordenId
         );
@@ -528,7 +527,6 @@ public class OrdenTrabajoServiceImpl implements OrdenTrabajoService {
                 repuestos);
     }
 
-    //Helpers
     private void validarElementosUnicosPresupuesto(PresupuestoRequestDTO request) {
         Set<Integer> servicios = new HashSet<>();
 
