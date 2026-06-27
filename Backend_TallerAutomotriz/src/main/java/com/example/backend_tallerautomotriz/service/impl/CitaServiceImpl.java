@@ -35,6 +35,7 @@ public class CitaServiceImpl implements CitaService {
     private final NotificacionService notificacionService;
     private final FacturaRepository facturaRepo;
 
+
     private static final LocalTime HORA_INICIO = LocalTime.of(9, 0);
     private static final LocalTime HORA_FIN    = LocalTime.of(19, 0);
 
