@@ -4,11 +4,13 @@ import com.example.backend_tallerautomotriz.dto.request.FacturaRequestDTO;
 import com.example.backend_tallerautomotriz.dto.response.FacturaResponseDTO;
 import com.example.backend_tallerautomotriz.entity.Factura;
 import com.example.backend_tallerautomotriz.entity.OrdenTrabajo;
+import com.example.backend_tallerautomotriz.enums.EstadoOrden;
 import com.example.backend_tallerautomotriz.enums.EstadoPago;
 import com.example.backend_tallerautomotriz.enums.MetodoPago;
 import com.example.backend_tallerautomotriz.exception.BusinessRuleException;
 import com.example.backend_tallerautomotriz.exception.EntityNotFoundException;
 import com.example.backend_tallerautomotriz.repository.FacturaRepository;
+import com.example.backend_tallerautomotriz.repository.OrdenTrabajoRepository;
 import com.example.backend_tallerautomotriz.service.FacturaService;
 import com.example.backend_tallerautomotriz.service.NotificacionService;
 import lombok.RequiredArgsConstructor;
@@ -16,13 +18,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
-
 @Service @RequiredArgsConstructor
 public class FacturaServiceImpl implements FacturaService {
     private final FacturaRepository repo;
     private final NotificacionService notificacionService;
-
-
+    private final OrdenTrabajoRepository ordenRepo;
 
     @Override
     @Transactional(readOnly = true)
@@ -36,34 +36,6 @@ public class FacturaServiceImpl implements FacturaService {
     public FacturaResponseDTO obtenerPorId(Integer id) {
         return toDTO(repo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Factura no encontrada: " + id)));
-    }
-    @Override
-    @Transactional
-    public FacturaResponseDTO confirmarPagoSeguro(Integer facturaId) {
-        Factura factura = repo.findByIdForUpdate(facturaId)
-                .orElseThrow(() -> new EntityNotFoundException("Factura no encontrada: " + facturaId));
-
-        if (factura.getMetodoPago() != MetodoPago.SEGURO) {
-            throw new BusinessRuleException("Esta factura no es de tipo seguro");
-        }
-        if (factura.getEstadoPago() == EstadoPago.PAGADO) {
-            return toDTO(factura);
-        }
-        if (factura.getEstadoPago() != EstadoPago.PENDIENTE_CONFIRMACION) {
-            throw new BusinessRuleException("La factura no está pendiente de confirmación");
-        }
-
-        factura.setEstadoPago(EstadoPago.PAGADO);
-        Factura guardada = repo.save(factura);
-
-        notificacionService.crear(
-                factura.getOrden().getCliente().getUsuario().getId(),
-                "El mecánico confirmó el pago del seguro para la factura #" + factura.getId(),
-                "PAGO_SEGURO_CONFIRMADO",
-                factura.getId()
-        );
-
-        return toDTO(guardada);
     }
 
     @Override
@@ -92,20 +64,15 @@ public class FacturaServiceImpl implements FacturaService {
         }
         factura.setMetodoPago(req.getMetodoPago());
         factura.setEstadoPago(EstadoPago.PAGADO);
-        return toDTO(repo.save(factura));
-    }
+        Factura guardada = repo.save(factura);
 
-    private FacturaResponseDTO toDTO(Factura factura) {
-        return new FacturaResponseDTO(
-                factura.getId(),
-                factura.getOrden().getId(),
-                factura.getOrden().getVehiculo().getPatente(),
-                factura.getOrden().getFechaCreacion(),
-                factura.getSubtotal(),
-                factura.getImpuestos(),
-                factura.getTotal(),
-                factura.getEstadoPago().name(),
-                factura.getMetodoPago() != null ? factura.getMetodoPago().name() : null);
+        OrdenTrabajo orden = factura.getOrden();
+        if (orden.getEstado() == EstadoOrden.ESPERANDO_PAGO) {
+            orden.setEstado(EstadoOrden.COMPLETADA);
+            ordenRepo.save(orden);
+        }
+
+        return toDTO(guardada);
     }
 
     @Override
@@ -159,18 +126,21 @@ public class FacturaServiceImpl implements FacturaService {
         if (factura.getEstadoPago() == EstadoPago.PAGADO) {
             return toDTO(factura);
         }
-
         if (factura.getMetodoPago() != MetodoPago.EFECTIVO) {
             throw new BusinessRuleException("Solo se puede confirmar pago en efectivo para facturas marcadas como efectivo");
         }
-
         if (factura.getEstadoPago() != EstadoPago.PENDIENTE_CONFIRMACION) {
             throw new BusinessRuleException("La factura no está pendiente de confirmación de efectivo");
         }
 
         factura.setEstadoPago(EstadoPago.PAGADO);
-
         Factura guardada = repo.save(factura);
+
+        OrdenTrabajo orden = factura.getOrden();
+        if (orden.getEstado() == EstadoOrden.ESPERANDO_PAGO) {
+            orden.setEstado(EstadoOrden.COMPLETADA);
+            ordenRepo.save(orden);
+        }
 
         notificacionService.crear(
                 factura.getOrden().getCliente().getUsuario().getId(),
@@ -180,5 +150,53 @@ public class FacturaServiceImpl implements FacturaService {
         );
 
         return toDTO(guardada);
+    }
+
+    @Override
+    @Transactional
+    public FacturaResponseDTO confirmarPagoSeguro(Integer facturaId) {
+        Factura factura = repo.findByIdForUpdate(facturaId)
+                .orElseThrow(() -> new EntityNotFoundException("Factura no encontrada: " + facturaId));
+
+        if (factura.getMetodoPago() != MetodoPago.SEGURO) {
+            throw new BusinessRuleException("Esta factura no es de tipo seguro");
+        }
+        if (factura.getEstadoPago() == EstadoPago.PAGADO) {
+            return toDTO(factura);
+        }
+        if (factura.getEstadoPago() != EstadoPago.PENDIENTE_CONFIRMACION) {
+            throw new BusinessRuleException("La factura no está pendiente de confirmación");
+        }
+
+        factura.setEstadoPago(EstadoPago.PAGADO);
+        Factura guardada = repo.save(factura);
+
+        OrdenTrabajo orden = factura.getOrden();
+        if (orden.getEstado() == EstadoOrden.ESPERANDO_PAGO) {
+            orden.setEstado(EstadoOrden.COMPLETADA);
+            ordenRepo.save(orden);
+        }
+
+        notificacionService.crear(
+                factura.getOrden().getCliente().getUsuario().getId(),
+                "El mecánico confirmó el pago del seguro para la factura #" + factura.getId(),
+                "PAGO_SEGURO_CONFIRMADO",
+                factura.getId()
+        );
+
+        return toDTO(guardada);
+    }
+
+    private FacturaResponseDTO toDTO(Factura factura) {
+        return new FacturaResponseDTO(
+                factura.getId(),
+                factura.getOrden().getId(),
+                factura.getOrden().getVehiculo().getPatente(),
+                factura.getOrden().getFechaCreacion(),
+                factura.getSubtotal(),
+                factura.getImpuestos(),
+                factura.getTotal(),
+                factura.getEstadoPago().name(),
+                factura.getMetodoPago() != null ? factura.getMetodoPago().name() : null);
     }
 }
