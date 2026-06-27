@@ -10,7 +10,7 @@ public interface VehiculoService {
     VehiculoResponseDTO obtenerPorPatente(String patente);
     List<VehiculoResponseDTO> listarPorCliente(Integer clienteId);
     List<VehiculoResponseDTO> listarTodos();
-    VehiculoResponseDTO actualizar(String patente, VehiculoRequestDTO request);
+    VehiculoResponseDTO actualizar(String patente, VehiculoRequestDTO request, String emailSolicitante);
     void eliminar(String patente);
 }
 

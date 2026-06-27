@@ -9,5 +9,9 @@ public interface FacturaService {
     FacturaResponseDTO obtenerPorOrden(Integer ordenId);
     FacturaResponseDTO obtenerPorId(Integer id);
     List<FacturaResponseDTO> listarTodas();
+    List<FacturaResponseDTO> listarPorCliente(Integer clienteId);
     FacturaResponseDTO procesarPago(FacturaRequestDTO request);
+    FacturaResponseDTO solicitarPagoEfectivo(Integer facturaId);
+    FacturaResponseDTO confirmarPagoEfectivo(Integer facturaId);
+    FacturaResponseDTO confirmarPagoSeguro(Integer facturaId);
 }

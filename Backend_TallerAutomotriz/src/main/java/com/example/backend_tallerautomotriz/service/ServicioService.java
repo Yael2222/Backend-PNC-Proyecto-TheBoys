@@ -12,5 +12,6 @@ public interface ServicioService {
     List<ServicioResponseDTO> listarActivos();
     ServicioResponseDTO actualizar(Integer id, ServicioRequestDTO request);
     void desactivar(Integer id);
+    void reactivar(Integer id);
 }
 

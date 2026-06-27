@@ -1,16 +1,38 @@
 package com.example.backend_tallerautomotriz.dto.request;
 
+import com.example.backend_tallerautomotriz.enums.TipoOrden;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import java.util.List;
 
 @Data @NoArgsConstructor @AllArgsConstructor
 public class OrdenTrabajoRequestDTO {
-    @NotBlank private String patente;
-    @NotNull  private Integer clienteId;
+    @NotBlank
+    @Size(max = 20)
+    @Pattern(regexp = "^[A-Za-z0-9-]+$")
+    private String patente;
+
+    @NotNull
+    @Positive
+    private Integer clienteId;
+
+    @Positive
     private Integer mecanicoId;
-    @NotBlank private String tipoOrden;
+
+    @Positive
+    private Integer sucursalId;
+
+    @NotNull
+    private TipoOrden tipoOrden;
+
+    @Size(max = 1000)
     private String comentarios;
-    @NotEmpty private List<OrdenServicioRequestDTO> servicios;
+
+    @NotEmpty
+    @Valid
+    private List<OrdenServicioRequestDTO> servicios;
+
+    @Valid
     private List<OrdenRepuestoRequestDTO> repuestos;
 }
